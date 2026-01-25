@@ -11,6 +11,7 @@ import {
 import Header from '@/components/Header'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ProfessionalStats from '@/components/ProfessionalStats'
+import OnboardingGuide from '@/components/OnboardingGuide'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { formatPrecio, formatFecha, formatTiempoRelativo, ESTADOS_SOLICITUD } from '@/lib/constants'
@@ -29,6 +30,7 @@ export default function ProfesionalDashboard() {
   const [loading, setLoading] = useState(true)
   const [activeView, setActiveView] = useState<'overview' | 'solicitudes' | 'servicios'>('overview')
   const [tab, setTab] = useState<'pendientes' | 'activas' | 'historial'>('pendientes')
+  const [showOnboarding, setShowOnboarding] = useState(true)
 
   useEffect(() => {
     if (!authLoading && role !== 'profesional') {
@@ -196,6 +198,20 @@ export default function ProfesionalDashboard() {
             Mis Servicios
           </button>
         </div>
+
+        {/* Onboarding Guide for new professionals */}
+        {showOnboarding && profesional && servicios.length === 0 && (
+          <div className="mb-8">
+            <OnboardingGuide
+              profesionalId={profesionalId || ''}
+              nombre={profesional.nombre}
+              tieneServicios={servicios.length > 0}
+              tieneFoto={!!profesional.foto_url}
+              tieneBio={!!profesional.bio}
+              onDismiss={() => setShowOnboarding(false)}
+            />
+          </div>
+        )}
 
         {/* Overview View */}
         {activeView === 'overview' && (

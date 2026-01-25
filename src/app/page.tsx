@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Shield, Clock, Star, ChevronRight, Zap, Users, CreditCard, CheckCircle } from 'lucide-react'
 import Header from '@/components/Header'
@@ -18,7 +18,7 @@ type ProfesionalConDetalles = Profesional & {
   zona_base: Zona | null
 }
 
-export default function HomePage() {
+function HomeContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -88,9 +88,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950">
-      <Header />
-
+    <>
       {/* Hero Section */}
       <section className="pt-24 pb-12 bg-gradient-to-b from-dark-900 to-dark-950">
         <div className="section">
@@ -247,7 +245,17 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+    </>
+  )
+}
 
+export default function HomePage() {
+  return (
+    <div className="min-h-screen bg-dark-950">
+      <Header />
+      <Suspense fallback={<div className="py-20"><LoadingSpinner size="lg" text="Cargando..." /></div>}>
+        <HomeContent />
+      </Suspense>
       <Footer />
     </div>
   )

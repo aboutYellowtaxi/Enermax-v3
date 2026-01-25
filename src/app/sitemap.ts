@@ -20,6 +20,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' ? 1 : 0.8,
   }))
 
+  // Category landing pages (high priority for SEO)
+  const categoryPages = [
+    'electricidad',
+    'plomeria',
+    'gas',
+    'pintura',
+    'carpinteria',
+    'cerrajeria',
+    'aire',
+    'limpieza',
+  ].map((cat) => ({
+    url: `${baseUrl}/servicios/${cat}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.95,
+  }))
+
   // Dynamic professional pages
   let professionalPages: MetadataRoute.Sitemap = []
 
@@ -42,5 +59,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Error fetching professionals for sitemap:', error)
   }
 
-  return [...staticPages, ...professionalPages]
+  return [...staticPages, ...categoryPages, ...professionalPages]
 }

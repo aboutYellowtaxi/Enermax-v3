@@ -4,13 +4,17 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Zap, User, MapPin, Briefcase, Phone, FileText,
-  ChevronRight, ChevronLeft, CheckCircle, AlertCircle
+  Zap, ChevronRight, ChevronLeft, CheckCircle, AlertCircle
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
-import { CATEGORIAS, ZONAS } from '@/lib/constants'
+import { CATEGORIAS } from '@/lib/constants'
 import LoadingSpinner from '@/components/LoadingSpinner'
+
+type Zona = {
+  id: string
+  nombre: string
+}
 
 export default function RegistroProfesionalPage() {
   const { user, loading: authLoading } = useAuth()
@@ -20,6 +24,7 @@ export default function RegistroProfesionalPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [zonas, setZonas] = useState<Zona[]>([])
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -34,6 +39,19 @@ export default function RegistroProfesionalPage() {
     cbu: '',
     alias_cbu: '',
   })
+
+  // Fetch zonas from DB
+  useEffect(() => {
+    async function fetchZonas() {
+      const { data } = await supabase
+        .from('zonas')
+        .select('id, nombre')
+        .eq('activa', true)
+        .order('nombre')
+      if (data) setZonas(data)
+    }
+    fetchZonas()
+  }, [])
 
   // Redirect if not logged in
   useEffect(() => {
@@ -78,14 +96,14 @@ export default function RegistroProfesionalPage() {
           apellido: formData.apellido,
           telefono: formData.telefono,
           email: user.email,
-          dni: formData.dni,
-          direccion: formData.direccion,
+          dni: formData.dni || null,
+          direccion: formData.direccion || null,
           zona_base_id: formData.zona_id || null,
-          bio: formData.bio,
+          bio: formData.bio || null,
           experiencia_anos: formData.experiencia_anos,
           categorias: formData.categorias,
-          cbu: formData.cbu,
-          alias_cbu: formData.alias_cbu,
+          cbu: formData.cbu || null,
+          alias_cbu: formData.alias_cbu || null,
           activo: true,
           disponible: true,
         })
@@ -98,6 +116,7 @@ export default function RegistroProfesionalPage() {
       }, 2000)
 
     } catch (err: any) {
+      console.error('Error:', err)
       setError(err.message || 'Error al crear el perfil')
     } finally {
       setLoading(false)
@@ -202,7 +221,7 @@ export default function RegistroProfesionalPage() {
                 </div>
 
                 <div>
-                  <label className="label">DNI</label>
+                  <label className="label">DNI (opcional)</label>
                   <input
                     type="text"
                     value={formData.dni}
@@ -213,7 +232,7 @@ export default function RegistroProfesionalPage() {
                 </div>
 
                 <div>
-                  <label className="label">Dirección</label>
+                  <label className="label">Dirección (opcional)</label>
                   <input
                     type="text"
                     value={formData.direccion}
@@ -231,7 +250,7 @@ export default function RegistroProfesionalPage() {
                     className="input"
                   >
                     <option value="">Seleccioná una zona</option>
-                    {ZONAS.map((zona) => (
+                    {zonas.map((zona) => (
                       <option key={zona.id} value={zona.id}>
                         {zona.nombre}
                       </option>
@@ -270,7 +289,6 @@ export default function RegistroProfesionalPage() {
                             : 'bg-dark-800 border-dark-700 text-dark-300 hover:border-dark-600'
                         }`}
                       >
-                        <span className="text-lg mr-2">{cat.icono}</span>
                         {cat.nombre}
                       </button>
                     ))}
@@ -310,12 +328,12 @@ export default function RegistroProfesionalPage() {
                 Datos de cobro
               </h2>
               <p className="text-dark-400 mb-6">
-                Para recibir tus pagos
+                Para recibir tus pagos (podés completar después)
               </p>
 
               <div className="space-y-5">
                 <div>
-                  <label className="label">CBU</label>
+                  <label className="label">CBU (opcional)</label>
                   <input
                     type="text"
                     value={formData.cbu}
@@ -325,7 +343,7 @@ export default function RegistroProfesionalPage() {
                     maxLength={22}
                   />
                   <p className="text-xs text-dark-500 mt-1">
-                    22 dígitos
+                    22 dígitos - podés agregarlo después
                   </p>
                 </div>
 
@@ -417,6 +435,13 @@ export default function RegistroProfesionalPage() {
             )}
           </div>
         </div>
+
+        {/* Skip link */}
+        <p className="text-center mt-6 text-dark-500 text-sm">
+          <Link href="/" className="hover:text-dark-300">
+            Volver al inicio
+          </Link>
+        </p>
       </div>
     </div>
   )

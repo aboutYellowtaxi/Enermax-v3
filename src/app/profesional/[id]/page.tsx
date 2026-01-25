@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   ArrowLeft, Star, MapPin, CheckCircle2, Clock, Shield,
-  Phone, MessageCircle, Calendar, Zap, ChevronRight
+  Phone, MessageCircle, Calendar, Zap, ChevronRight, MessageSquare
 } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -290,6 +290,53 @@ export default function ProfesionalPage() {
           </div>
         )}
       </section>
+
+      {/* Sticky Contact Bar - Super accessible for non-tech users */}
+      {profesional.servicios.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-dark-900/95 backdrop-blur-lg border-t border-dark-800 p-4 z-40">
+          <div className="section">
+            <div className="flex items-center justify-between gap-4">
+              <div className="hidden sm:block">
+                <p className="text-dark-400 text-sm">Desde</p>
+                <p className="text-2xl font-bold text-primary-400">
+                  {formatPrecio(Math.min(...profesional.servicios.map(s => s.precio)))}
+                </p>
+              </div>
+              <div className="flex gap-3 flex-1 sm:flex-none">
+                {/* WhatsApp - Most accessible for elderly */}
+                <a
+                  href={`https://wa.me/54${profesional.telefono.replace(/\D/g, '')}?text=Hola ${profesional.nombre}! Te contacto por Enermax para consultar por tus servicios.`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-none btn-secondary btn-lg flex items-center justify-center gap-2"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  <span className="hidden sm:inline">WhatsApp</span>
+                </a>
+                {/* Direct call */}
+                <a
+                  href={`tel:${profesional.telefono}`}
+                  className="flex-1 sm:flex-none btn-secondary btn-lg flex items-center justify-center gap-2"
+                >
+                  <Phone className="w-5 h-5" />
+                  <span className="hidden sm:inline">Llamar</span>
+                </a>
+                {/* Main CTA - Hire with payment protection */}
+                <Link
+                  href={`/contratar/${profesional.id}/${profesional.servicios[0].id}`}
+                  className="flex-1 sm:flex-none btn-primary btn-lg flex items-center justify-center gap-2"
+                >
+                  <Shield className="w-5 h-5" />
+                  Contratar seguro
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Spacer for fixed bar */}
+      <div className="h-24" />
 
       <Footer />
     </div>

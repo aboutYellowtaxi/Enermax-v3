@@ -34,6 +34,12 @@ export const ZONAS_AMBA = [
   'Lomas de Zamora', 'Esteban Echeverría', 'Ezeiza', 'CABA'
 ]
 
+// Zonas con ID (para forms que necesitan ID)
+export const ZONAS = ZONAS_AMBA.map((nombre, index) => ({
+  id: `zona-${index + 1}`,
+  nombre,
+}))
+
 // Horarios disponibles
 export const HORARIOS = [
   { value: 'manana', label: 'Mañana (8:00 - 12:00)', hora_inicio: '08:00', hora_fin: '12:00' },

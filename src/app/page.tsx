@@ -9,6 +9,7 @@ import ProfessionalCard from '@/components/ProfessionalCard'
 import SearchFilters from '@/components/SearchFilters'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import EmptyState from '@/components/EmptyState'
+import QuickHireSection from '@/components/QuickHireSection'
 import { supabase } from '@/lib/supabase'
 import { CATEGORIAS, formatPrecio } from '@/lib/constants'
 import type { Profesional, Servicio, Zona } from '@/lib/database.types'
@@ -120,6 +121,9 @@ function HomeContent() {
           </div>
         </div>
       </section>
+
+      {/* Quick Hire Section - Super accessible for all users */}
+      <QuickHireSection />
 
       {/* Filters Section */}
       <section id="categorias" className="py-6 bg-dark-950 sticky top-16 z-30 border-b border-dark-800">

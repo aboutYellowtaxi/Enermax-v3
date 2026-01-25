@@ -1,0 +1,15 @@
+# Enermax robots.txt
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://enermax.com.ar/sitemap.xml
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /dashboard/admin/
+
+# Allow dashboard pages for indexing (optional)
+Allow: /dashboard/cliente/
+Allow: /dashboard/profesional/

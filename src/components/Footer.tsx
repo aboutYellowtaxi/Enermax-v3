@@ -138,8 +138,9 @@ export default function Footer() {
 
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-dark-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-dark-500 text-sm">
+          <p className="text-dark-500 text-sm flex items-center gap-2">
             © {currentYear} Enermax. Todos los derechos reservados.
+            <span className="px-2 py-0.5 bg-primary-500/20 text-primary-400 text-xs font-bold rounded">V3</span>
           </p>
           <div className="flex items-center gap-2 text-dark-500 text-sm">
             <span>Hecho con</span>

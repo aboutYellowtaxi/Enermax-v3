@@ -2,16 +2,16 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Shield, Clock, Star, ChevronRight, Zap, Users, CreditCard, CheckCircle } from 'lucide-react'
+import Link from 'next/link'
+import { Search, MapPin, CreditCard, CheckCircle, ChevronRight } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import ProfessionalCard from '@/components/ProfessionalCard'
-import SearchFilters from '@/components/SearchFilters'
+import ProfessionalsStorySection from '@/components/ProfessionalsStorySection'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import EmptyState from '@/components/EmptyState'
-import QuickHireSection from '@/components/QuickHireSection'
 import { supabase } from '@/lib/supabase'
-import { CATEGORIAS, formatPrecio } from '@/lib/constants'
+import { CATEGORIAS, ZONAS_AMBA } from '@/lib/constants'
 import type { Profesional, Servicio, Zona } from '@/lib/database.types'
 
 type ProfesionalConDetalles = Profesional & {
@@ -50,13 +50,11 @@ function HomeContent() {
       const { data, error } = await query
 
       if (!error && data) {
-        // Process zona_base (may come as array from Supabase)
         let resultado = data.map((p: any) => ({
           ...p,
           zona_base: Array.isArray(p.zona_base) ? p.zona_base[0] || null : p.zona_base
         }))
 
-        // Filter by zona if selected
         if (zona) {
           resultado = resultado.filter((p: ProfesionalConDetalles) =>
             p.zona_base?.nombre?.toLowerCase().includes(zona.toLowerCase())
@@ -77,7 +75,7 @@ function HomeContent() {
     const params = new URLSearchParams()
     if (cat) params.set('categoria', cat)
     if (zona) params.set('zona', zona)
-    router.push(`/?${params.toString()}`, { scroll: false })
+    router.push(`/?${params.toString()}#profesionales`, { scroll: false })
   }
 
   const handleZonaChange = (z: string) => {
@@ -85,82 +83,113 @@ function HomeContent() {
     const params = new URLSearchParams()
     if (categoria) params.set('categoria', categoria)
     if (z) params.set('zona', z)
-    router.push(`/?${params.toString()}`, { scroll: false })
+    router.push(`/?${params.toString()}#profesionales`, { scroll: false })
   }
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="pt-24 pb-12 bg-gradient-to-b from-dark-900 to-dark-950">
+      {/* Compact Hero */}
+      <section className="pt-20 pb-6 bg-dark-950">
         <div className="section">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-dark-100 mb-4">
-              Profesionales de confianza
-              <span className="block gradient-text">para tu hogar</span>
+          <div className="max-w-2xl">
+            <h1 className="text-3xl md:text-4xl font-bold text-dark-100 mb-3">
+              Encontra tu profesional
             </h1>
-            <p className="text-lg text-dark-400 mb-8">
-              Electricistas, plomeros, gasistas y más. Verificados, con pago protegido
-              y garantía de satisfacción.
+            <p className="text-dark-400">
+              Electricistas, plomeros, gasistas y mas. Pago protegido.
             </p>
-
-            {/* Trust badges */}
-            <div className="flex flex-wrap justify-center gap-4">
-              <div className="flex items-center gap-2 bg-dark-800/50 rounded-full px-4 py-2 text-sm">
-                <Shield className="w-4 h-4 text-primary-400" />
-                <span className="text-dark-300">Pago protegido</span>
-              </div>
-              <div className="flex items-center gap-2 bg-dark-800/50 rounded-full px-4 py-2 text-sm">
-                <CheckCircle className="w-4 h-4 text-primary-400" />
-                <span className="text-dark-300">Profesionales verificados</span>
-              </div>
-              <div className="flex items-center gap-2 bg-dark-800/50 rounded-full px-4 py-2 text-sm">
-                <Star className="w-4 h-4 text-primary-400" />
-                <span className="text-dark-300">Garantía de satisfacción</span>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Quick Hire Section - Super accessible for all users */}
-      <QuickHireSection />
+      {/* Stories Section - Instagram style */}
+      <ProfessionalsStorySection
+        profesionales={profesionales}
+        loading={loading}
+      />
 
-      {/* Filters Section */}
-      <section id="categorias" className="py-6 bg-dark-950 sticky top-16 z-30 border-b border-dark-800">
+      {/* Category Pills - Horizontal scroll */}
+      <section className="py-4 bg-dark-950 sticky top-16 z-30 border-b border-dark-800">
         <div className="section">
-          <SearchFilters
-            categoria={categoria}
-            zona={zona}
-            onCategoriaChange={handleCategoriaChange}
-            onZonaChange={handleZonaChange}
-          />
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <button
+              onClick={() => handleCategoriaChange('')}
+              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                !categoria
+                  ? 'bg-primary-500 text-dark-900'
+                  : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
+              }`}
+            >
+              Todos
+            </button>
+            {CATEGORIAS.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoriaChange(cat.id)}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  categoria === cat.id
+                    ? 'bg-primary-500 text-dark-900'
+                    : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
+                }`}
+              >
+                {cat.nombre}
+              </button>
+            ))}
+          </div>
+
+          {/* Zone filter */}
+          <div className="mt-3 flex items-center gap-3">
+            <MapPin className="w-4 h-4 text-dark-500" />
+            <select
+              value={zona}
+              onChange={(e) => handleZonaChange(e.target.value)}
+              className="bg-transparent text-sm text-dark-300 border-none focus:ring-0 cursor-pointer"
+            >
+              <option value="">Todas las zonas</option>
+              {ZONAS_AMBA.map((z) => (
+                <option key={z} value={z}>{z}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </section>
 
-      {/* Professionals Grid */}
-      <section className="py-12">
+      {/* All Professionals Grid */}
+      <section id="profesionales" className="py-8">
         <div className="section">
-          {/* Results header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-dark-100">
-              {loading ? 'Buscando profesionales...' : (
+              {loading ? 'Buscando...' : (
                 profesionales.length > 0
-                  ? `${profesionales.length} profesional${profesionales.length !== 1 ? 'es' : ''} disponible${profesionales.length !== 1 ? 's' : ''}`
-                  : 'No hay profesionales'
+                  ? `${profesionales.length} profesional${profesionales.length !== 1 ? 'es' : ''}`
+                  : 'Sin resultados'
               )}
-              {categoria && ` en ${CATEGORIAS.find(c => c.id === categoria)?.nombre || categoria}`}
-              {zona && ` en ${zona}`}
+              {categoria && ` en ${CATEGORIAS.find(c => c.id === categoria)?.nombre}`}
+              {zona && ` - ${zona}`}
             </h2>
+
+            {(categoria || zona) && (
+              <button
+                onClick={() => {
+                  setCategoria('')
+                  setZona('')
+                  router.push('/')
+                }}
+                className="text-sm text-primary-400 hover:underline"
+              >
+                Limpiar filtros
+              </button>
+            )}
           </div>
 
           {loading ? (
-            <div className="py-20">
+            <div className="py-12">
               <LoadingSpinner size="lg" text="Cargando profesionales..." />
             </div>
           ) : profesionales.length === 0 ? (
             <EmptyState
               title="No encontramos profesionales"
-              description="Probá cambiando los filtros o buscando en otra zona"
+              description="Proba con otros filtros o en otra zona"
               action={{
                 label: 'Ver todos',
                 onClick: () => {
@@ -171,7 +200,7 @@ function HomeContent() {
               }}
             />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 stagger-children">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {profesionales.map((pro) => (
                 <ProfessionalCard key={pro.id} profesional={pro} />
               ))}
@@ -180,72 +209,61 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="como-funciona" className="py-20 bg-dark-900/50">
+      {/* How it works - Simplified */}
+      <section id="como-funciona" className="py-16 bg-dark-900/50">
         <div className="section">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-dark-100 mb-4">
-              Cómo funciona
-            </h2>
-            <p className="text-dark-400 max-w-2xl mx-auto">
-              Contratar un profesional nunca fue tan fácil y seguro
-            </p>
-          </div>
+          <h2 className="text-2xl font-bold text-dark-100 text-center mb-10">
+            Como funciona
+          </h2>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-primary-400" />
+              <div className="w-14 h-14 bg-primary-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Search className="w-7 h-7 text-primary-400" />
               </div>
-              <h3 className="text-lg font-semibold text-dark-100 mb-2">
-                1. Elegí un profesional
-              </h3>
-              <p className="text-dark-400">
-                Buscá por categoría y zona. Compará precios, calificaciones y reviews de otros clientes.
+              <h3 className="font-semibold text-dark-100 mb-2">1. Elegi</h3>
+              <p className="text-sm text-dark-400">
+                Busca por categoria y zona
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="w-8 h-8 text-primary-400" />
+              <div className="w-14 h-14 bg-primary-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="w-7 h-7 text-primary-400" />
               </div>
-              <h3 className="text-lg font-semibold text-dark-100 mb-2">
-                2. Pagá de forma segura
-              </h3>
-              <p className="text-dark-400">
-                Tu pago queda protegido. Solo se libera cuando confirmás que el trabajo está bien hecho.
+              <h3 className="font-semibold text-dark-100 mb-2">2. Paga seguro</h3>
+              <p className="text-sm text-dark-400">
+                Tu dinero queda protegido
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-primary-400" />
+              <div className="w-14 h-14 bg-primary-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-7 h-7 text-primary-400" />
               </div>
-              <h3 className="text-lg font-semibold text-dark-100 mb-2">
-                3. Recibí el trabajo
-              </h3>
-              <p className="text-dark-400">
-                El profesional realiza el trabajo. Cuando estés conforme, confirmás y el pago se libera.
+              <h3 className="font-semibold text-dark-100 mb-2">3. Confirma</h3>
+              <p className="text-sm text-dark-400">
+                Solo pagas si queda bien
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20">
+      {/* CTA for professionals */}
+      <section className="py-16">
         <div className="section">
-          <div className="bg-gradient-to-br from-primary-500/20 to-primary-600/10 rounded-3xl p-8 md:p-12 text-center border border-primary-500/20">
-            <h2 className="text-3xl font-bold text-dark-100 mb-4">
-              ¿Sos profesional?
+          <div className="bg-gradient-to-br from-primary-500/20 to-primary-600/10 rounded-2xl p-8 text-center border border-primary-500/20">
+            <h2 className="text-2xl font-bold text-dark-100 mb-3">
+              Sos profesional?
             </h2>
-            <p className="text-dark-300 mb-8 max-w-xl mx-auto">
-              Unite a Enermax y conseguí nuevos clientes. Cobrá de forma segura y hacé crecer tu negocio.
+            <p className="text-dark-300 mb-6 max-w-md mx-auto">
+              Unite y consegui nuevos clientes. Registro gratis.
             </p>
-            <a href="/registro?tipo=profesional" className="btn-primary btn-lg">
-              Registrate gratis
+            <Link href="/registro-profesional" className="btn-primary">
+              Registrarme gratis
               <ChevronRight className="w-5 h-5" />
-            </a>
+            </Link>
           </div>
         </div>
       </section>

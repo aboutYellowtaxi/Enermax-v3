@@ -34,6 +34,7 @@ export default function ClienteDashboard() {
 
   useEffect(() => {
     if (!user) return
+    const userId = user.id
 
     async function fetchSolicitudes() {
       const { data } = await supabase
@@ -43,7 +44,7 @@ export default function ClienteDashboard() {
           profesional:profesionales(*),
           servicio:servicios(*)
         `)
-        .eq('cliente_auth_id', user.id)
+        .eq('cliente_auth_id', userId)
         .order('created_at', { ascending: false })
 
       if (data) {

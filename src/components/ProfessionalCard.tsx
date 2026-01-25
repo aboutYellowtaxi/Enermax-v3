@@ -2,122 +2,106 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Star, MapPin, CheckCircle2, Clock, Zap } from 'lucide-react'
-import { formatPrecio } from '@/lib/constants'
+import { Star, MapPin, Phone, MessageSquare, Zap } from 'lucide-react'
 import type { Profesional, Servicio, Zona } from '@/lib/database.types'
+
+// Mapeo de categorías a nombres legibles
+const CATEGORIA_NOMBRES: Record<string, string> = {
+  electricidad: 'Electricista',
+  plomeria: 'Plomero',
+  gas: 'Gasista',
+  pintura: 'Pintor',
+  carpinteria: 'Carpintero',
+  cerrajeria: 'Cerrajero',
+  aire: 'Aire Acond.',
+  limpieza: 'Limpieza',
+}
 
 interface ProfessionalCardProps {
   profesional: Profesional & {
     servicios: Servicio[]
     zona_base: Zona | null
   }
-  showDistance?: boolean
-  distance?: number
 }
 
-export default function ProfessionalCard({
-  profesional,
-  showDistance,
-  distance
-}: ProfessionalCardProps) {
-  const minPrecio = profesional.servicios.length > 0
-    ? Math.min(...profesional.servicios.map(s => s.precio))
-    : null
+export default function ProfessionalCard({ profesional }: ProfessionalCardProps) {
+  const categoriaPrincipal = profesional.categorias?.[0] || 'profesional'
+  const nombreCategoria = CATEGORIA_NOMBRES[categoriaPrincipal] || categoriaPrincipal
 
-  const categoriaPrincipal = profesional.categorias?.[0] || 'Profesional'
+  // Limpiar teléfono para links
+  const telefonoLimpio = profesional.telefono.replace(/\D/g, '')
+  const whatsappLink = `https://wa.me/54${telefonoLimpio}?text=Hola ${profesional.nombre}! Te contacto por Enermax.`
+  const telLink = `tel:+54${telefonoLimpio}`
 
   return (
-    <Link href={`/profesional/${profesional.id}`}>
-      <article className="pro-card">
-        {/* Image/Avatar section */}
-        <div className="relative h-48 bg-dark-800 overflow-hidden">
-          {profesional.foto_url ? (
-            <Image
-              src={profesional.foto_url}
-              alt={`${profesional.nombre} ${profesional.apellido || ''}`}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-500/20 to-primary-600/10">
-              <div className="w-20 h-20 rounded-full bg-primary-500/20 flex items-center justify-center">
-                <Zap className="w-10 h-10 text-primary-400" />
+    <article className="bg-dark-900 border border-dark-800 rounded-2xl overflow-hidden hover:border-dark-700 transition-all">
+      {/* Header con foto y info básica */}
+      <Link href={`/profesional/${profesional.id}`} className="block">
+        <div className="p-4 flex items-center gap-4">
+          {/* Avatar */}
+          <div className="w-16 h-16 rounded-xl overflow-hidden bg-dark-800 flex-shrink-0">
+            {profesional.foto_url ? (
+              <Image
+                src={profesional.foto_url}
+                alt={profesional.nombre}
+                width={64}
+                height={64}
+                className="object-cover w-full h-full"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-500/30 to-primary-600/20">
+                <Zap className="w-8 h-8 text-primary-400" />
               </div>
-            </div>
-          )}
-
-          {/* Badges */}
-          <div className="absolute top-3 left-3 flex gap-2">
-            {profesional.verificado && (
-              <span className="badge-success text-[10px]">
-                <CheckCircle2 className="w-3 h-3" />
-                Verificado
-              </span>
-            )}
-            {profesional.premium && (
-              <span className="badge-primary text-[10px]">
-                Premium
-              </span>
             )}
           </div>
 
-          {/* Rating pill */}
-          <div className="absolute bottom-3 right-3 bg-dark-900/90 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1">
-            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-            <span className="text-sm font-medium text-dark-100">
-              {profesional.calificacion.toFixed(1)}
-            </span>
-            <span className="text-xs text-dark-400">
-              ({profesional.total_reviews})
-            </span>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-4">
-          {/* Name and category */}
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div>
-              <h3 className="font-semibold text-dark-100 group-hover:text-primary-400 transition-colors">
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold text-dark-100 truncate">
                 {profesional.nombre} {profesional.apellido?.charAt(0)}.
               </h3>
-              <p className="text-sm text-dark-400 capitalize">
-                {categoriaPrincipal.replace('_', ' ')}
-              </p>
+              <div className="flex items-center gap-1 text-xs bg-dark-800 rounded-full px-2 py-0.5">
+                <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                <span className="text-dark-200">{profesional.calificacion.toFixed(1)}</span>
+              </div>
             </div>
-          </div>
 
-          {/* Location */}
-          <div className="flex items-center gap-4 text-sm text-dark-400 mb-3">
+            <p className="text-sm text-primary-400 font-medium">
+              {nombreCategoria}
+            </p>
+
             {profesional.zona_base && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5" />
+              <p className="text-xs text-dark-400 flex items-center gap-1 mt-1">
+                <MapPin className="w-3 h-3" />
                 {profesional.zona_base.nombre}
-              </span>
+              </p>
             )}
-            {showDistance && distance !== undefined && (
-              <span className="flex items-center gap-1 text-primary-400">
-                <MapPin className="w-3.5 h-3.5" />
-                {distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`}
-              </span>
-            )}
-          </div>
-
-          {/* Stats */}
-          <div className="flex items-center gap-4 text-xs text-dark-500 mb-4">
-            <span>{profesional.total_trabajos} trabajos</span>
-            <span>{profesional.experiencia_anos} años exp.</span>
-          </div>
-
-          {/* Price */}
-          <div className="flex items-center justify-between pt-3 border-t border-dark-800">
-            <span className="text-sm text-dark-400">Desde</span>
-            <span className="text-lg font-bold text-primary-400">
-              {minPrecio ? formatPrecio(minPrecio) : 'Consultar'}
-            </span>
           </div>
         </div>
-      </article>
-    </Link>
+      </Link>
+
+      {/* Botones de contacto directo */}
+      <div className="px-4 pb-4 flex gap-2">
+        <a
+          href={telLink}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-dark-800 hover:bg-dark-700 rounded-xl text-dark-200 text-sm font-medium transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Phone className="w-4 h-4" />
+          Llamar
+        </a>
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-500 rounded-xl text-white text-sm font-medium transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MessageSquare className="w-4 h-4" />
+          WhatsApp
+        </a>
+      </div>
+    </article>
   )
 }

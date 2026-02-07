@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield, Clock, CheckCircle, Loader2, Zap, Star, Calendar, Search } from 'lucide-react'
+import { Shield, Clock, CheckCircle, Loader2, Zap, Star, Calendar, Search, GraduationCap, Briefcase, Wrench, MapPin } from 'lucide-react'
 
 export default function LandingPage() {
   const [form, setForm] = useState({
@@ -15,7 +15,6 @@ export default function LandingPage() {
   const [error, setError] = useState('')
   const [locationLoading, setLocationLoading] = useState(false)
   const [locationGranted, setLocationGranted] = useState(false)
-  const [reviews, setReviews] = useState<{ calificacion: number; comentario: string; cliente_nombre: string; created_at: string }[]>([])
   const [portfolio, setPortfolio] = useState<{ id: string; foto_url: string; descripcion: string }[]>([])
 
   useEffect(() => {
@@ -57,11 +56,8 @@ export default function LandingPage() {
     )
   }, [])
 
-  // Fetch reviews and portfolio
+  // Fetch portfolio
   useEffect(() => {
-    fetch('/api/reviews?limit=5').then(r => r.json()).then(d => {
-      if (d.reviews) setReviews(d.reviews)
-    }).catch(() => {})
     fetch('/api/portfolio?limit=8').then(r => r.json()).then(d => {
       if (d.items) setPortfolio(d.items)
     }).catch(() => {})
@@ -271,27 +267,97 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Reviews section */}
-        {reviews.length > 0 && (
-          <section className="w-full py-8 border-t border-gray-100">
-            <div className="max-w-3xl mx-auto px-4">
-              <h2 className="text-lg font-bold text-gray-900 text-center mb-6">Lo que dicen nuestros clientes</h2>
-              <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x">
-                {reviews.map((r, i) => (
-                  <div key={i} className="min-w-[260px] max-w-[300px] bg-gray-50 rounded-xl p-4 border border-gray-100 snap-start flex-shrink-0">
-                    <div className="flex items-center gap-0.5 mb-2">
-                      {[1,2,3,4,5].map(s => (
-                        <Star key={s} className={`w-3.5 h-3.5 ${s <= r.calificacion ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} />
-                      ))}
-                    </div>
-                    {r.comentario && <p className="text-sm text-gray-700 mb-2 line-clamp-3">{r.comentario}</p>}
-                    <p className="text-xs text-gray-400">{r.cliente_nombre || 'Cliente'}</p>
+        {/* Professional profile */}
+        <section className="w-full py-8 border-t border-gray-100">
+          <div className="max-w-3xl mx-auto px-4">
+            <h2 className="text-lg font-bold text-gray-900 text-center mb-6">Conocé al profesional</h2>
+            <div className="max-w-md mx-auto">
+              {/* Profile header */}
+              <div className="flex items-center gap-4 mb-5">
+                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                  L
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-lg">Leonel Vivas</h3>
+                  <p className="text-sm text-gray-500">Electricista matriculado</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3 h-3 text-gray-400" />
+                    <span className="text-xs text-gray-400">Moreno, Buenos Aires</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                <div className="bg-blue-50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-bold text-blue-700">5+</p>
+                  <p className="text-[10px] text-blue-600">Años exp.</p>
+                </div>
+                <div className="bg-emerald-50 rounded-xl p-3 text-center">
+                  <div className="flex items-center justify-center gap-0.5">
+                    {[1,2,3,4,5].map(i => (
+                      <Star key={i} className="w-3 h-3 fill-emerald-500 text-emerald-500" />
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-emerald-600 mt-0.5">Calificación</p>
+                </div>
+                <div className="bg-amber-50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-bold text-amber-700">100%</p>
+                  <p className="text-[10px] text-amber-600">Garantía</p>
+                </div>
+              </div>
+
+              {/* Experience */}
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <GraduationCap className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Técnico Electromecánico</p>
+                    <p className="text-xs text-gray-500">Escuela Técnica N°2 de Moreno</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Electricista Domiciliario</p>
+                    <p className="text-xs text-gray-500">Instalaciones, tableros, térmicas, disyuntores, detección de fallas</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Wrench className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Mantenimiento Industrial</p>
+                    <p className="text-xs text-gray-500">Soldadura SMAW/MIG · Pintura industrial</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Briefcase className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Construcción</p>
+                    <p className="text-xs text-gray-500">Albañilería · Obra civil · 2+ años en DARQ</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Skills tags */}
+              <div className="flex flex-wrap gap-1.5 mt-4">
+                {['Instalaciones eléctricas', 'Tableros', 'Lectura de planos', 'Normas de seguridad', 'Soldadura', 'Cableado estructurado'].map(skill => (
+                  <span key={skill} className="text-[11px] bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                    {skill}
+                  </span>
                 ))}
               </div>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         {/* Portfolio section */}
         {portfolio.length > 0 && (

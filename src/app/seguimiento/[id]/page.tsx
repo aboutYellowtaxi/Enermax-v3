@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle, Clock, Phone, MessageSquare, Zap, MapPin, Truck, Wrench, Bookmark, Star } from 'lucide-react'
+import { CheckCircle, Clock, Phone, MessageSquare, Zap, MapPin, Truck, Wrench, Bookmark, Star, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
 import Chat from '@/components/Chat'
 import MediaUploader from '@/components/MediaUploader'
@@ -150,28 +150,46 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
 
           {/* Professional card */}
           <div className="bg-white rounded-2xl p-4 mb-3 border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">L</div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">L</div>
               <div className="flex-1">
-                <p className="font-bold text-gray-900">{PROFESIONAL_NOMBRE} V.</p>
-                <p className="text-xs text-gray-500">Electricista matriculado · 5 años exp.</p>
+                <p className="font-bold text-gray-900 text-lg">{PROFESIONAL_NOMBRE} Vivas</p>
+                <p className="text-xs text-gray-500">Electricista matriculado · Técnico Electromecánico</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-0.5">
+                    {[1,2,3,4,5].map(i => (
+                      <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-gray-400">5+ años exp.</span>
+                </div>
               </div>
-              <div className="flex gap-1.5">
-                <a
-                  href={`tel:+549${PROFESIONAL_TELEFONO}`}
-                  className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
-                >
-                  <Phone className="w-4 h-4 text-gray-700" />
-                </a>
-                <a
-                  href={`https://wa.me/549${PROFESIONAL_TELEFONO}?text=${encodeURIComponent(`Hola ${PROFESIONAL_NOMBRE}, agendé por Enermax (Ref: ${params.id.slice(0, 8)})`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 bg-emerald-100 hover:bg-emerald-200 rounded-full flex items-center justify-center transition-colors"
-                >
-                  <MessageSquare className="w-4 h-4 text-emerald-700" />
-                </a>
-              </div>
+            </div>
+            <div className="flex gap-1.5 mb-3">
+              <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <GraduationCap className="w-3 h-3" /> Esc. Técnica N°2 Moreno
+              </span>
+              <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> Moreno, BA
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <a
+                href={`tel:+549${PROFESIONAL_TELEFONO}`}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              >
+                <Phone className="w-4 h-4 text-gray-700" />
+                <span className="text-sm font-medium text-gray-700">Llamar</span>
+              </a>
+              <a
+                href={`https://wa.me/549${PROFESIONAL_TELEFONO}?text=${encodeURIComponent(`Hola ${PROFESIONAL_NOMBRE}, agendé por Enermax (Ref: ${params.id.slice(0, 8)})`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-100 hover:bg-emerald-200 rounded-xl transition-colors"
+              >
+                <MessageSquare className="w-4 h-4 text-emerald-700" />
+                <span className="text-sm font-medium text-emerald-700">WhatsApp</span>
+              </a>
             </div>
           </div>
 

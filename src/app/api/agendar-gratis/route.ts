@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase'
 import { notificarNuevoCliente } from '@/lib/email'
 import { rateLimit } from '@/lib/rate-limit'
 import { sanitizeString } from '@/lib/sanitize'
+import { sendTelegramMessage, isTelegramConfigured } from '@/lib/telegram'
 
 export async function POST(request: NextRequest) {
   // Rate limit by IP
@@ -74,13 +75,25 @@ export async function POST(request: NextRequest) {
       },
     ])
 
-    // Notify admin
+    // Notify admin via email
     notificarNuevoCliente('nueva_solicitud', {
       telefono,
       direccion: direccion || 'Sin especificar',
       descripcion: descripcion || 'Agendamiento',
       solicitudId: solicitud.id,
     }).catch(() => {})
+
+    // Notify via Telegram
+    if (isTelegramConfigured()) {
+      const shortId = solicitud.id.slice(0, 8)
+      sendTelegramMessage(
+        `🆕 <b>Nueva solicitud</b> — <code>${shortId}</code>\n\n` +
+        `📱 <b>Tel:</b> ${telefono}\n` +
+        `📍 <b>Dir:</b> ${direccion || 'Sin especificar'}\n` +
+        (descripcion ? `📝 ${descripcion}\n` : '') +
+        `\nResponder: <code>/r ${shortId} tu mensaje</code>`
+      ).catch(() => {})
+    }
 
     return NextResponse.json({
       success: true,

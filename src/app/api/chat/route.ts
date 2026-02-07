@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { sanitizeString, isValidUUID } from '@/lib/sanitize'
+import { sendTelegramMessage, sendTelegramPhoto, isTelegramConfigured } from '@/lib/telegram'
 
 // GET - Fetch messages for a solicitud
 export async function GET(request: NextRequest) {
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Create notification for the other party
     const { data: solicitud } = await supabase
       .from('solicitudes')
-      .select('profesional_id, cliente_auth_id')
+      .select('profesional_id, cliente_auth_id, cliente_telefono, direccion')
       .eq('id', solicitudId)
       .single()
 
@@ -95,6 +96,25 @@ export async function POST(request: NextRequest) {
           enviada_email: false,
           enviada_push: false,
         })
+      } catch { /* best effort */ }
+    }
+
+    // Forward client messages to Telegram
+    if (autorTipo === 'cliente' && isTelegramConfigured()) {
+      try {
+        const shortId = solicitudId.slice(0, 8)
+        const dir = solicitud?.direccion && solicitud.direccion !== 'Sin especificar'
+          ? ` · ${solicitud.direccion}` : ''
+        const header = `💬 <b>Nuevo mensaje</b> — <code>${shortId}</code>${dir}`
+
+        if (archivoUrl && /\.(jpg|jpeg|png|gif|webp|heic)(\?|$)/i.test(archivoUrl)) {
+          await sendTelegramPhoto(archivoUrl, `${header}\n\n${cleanMensaje || '📷 Foto'}`)
+        } else {
+          let text = `${header}\n\n${cleanMensaje}`
+          if (archivoUrl) text += `\n\n📎 <a href="${archivoUrl}">Ver archivo</a>`
+          text += `\n\nResponder: <code>/r ${shortId} tu mensaje</code>`
+          await sendTelegramMessage(text)
+        }
       } catch { /* best effort */ }
     }
 

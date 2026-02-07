@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { CheckCircle, Clock, Phone, MessageSquare, Zap, MapPin, Truck, Wrench, Bookmark, Star } from 'lucide-react'
 import Link from 'next/link'
 import Chat from '@/components/Chat'
-import VideoRecorder from '@/components/VideoRecorder'
+import MediaUploader from '@/components/MediaUploader'
 
 const PROFESIONAL_TELEFONO = '1131449673'
 const PROFESIONAL_NOMBRE = 'Leonel'
@@ -282,10 +282,10 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
             <Chat solicitudId={params.id} autorTipo="cliente" />
           </div>
 
-          {/* Video recorder */}
+          {/* Media uploader */}
           {!esCancelada && !esCompletada && (
             <div className="mb-3">
-              <VideoRecorder solicitudId={params.id} />
+              <MediaUploader solicitudId={params.id} />
             </div>
           )}
 

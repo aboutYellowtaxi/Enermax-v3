@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Zap, Phone, MapPin, MessageSquare, Clock, CheckCircle, RefreshCw, AlertCircle, Truck, Wrench, X, Undo2, ChevronDown, DollarSign, Lock } from 'lucide-react'
+import { Zap, Phone, MapPin, MessageSquare, Clock, CheckCircle, RefreshCw, AlertCircle, Truck, Wrench, X, Undo2, ChevronDown, DollarSign, Lock, Trash2, EyeOff } from 'lucide-react'
 import Chat from '@/components/Chat'
 
 interface Solicitud {
@@ -15,6 +15,8 @@ interface Solicitud {
   estado: string
   created_at: string
 }
+
+type Tab = 'activas' | 'completadas' | 'canceladas'
 
 const ESTADOS_FLOW = [
   { estado: 'aceptada', label: 'Contacté', icon: Phone, color: 'bg-blue-600 text-white hover:bg-blue-700' },
@@ -33,6 +35,24 @@ export default function PanelPage() {
   const [secretInput, setSecretInput] = useState('')
   const [completarModal, setCompletarModal] = useState<string | null>(null)
   const [montoTrabajo, setMontoTrabajo] = useState('')
+  const [tab, setTab] = useState<Tab>('activas')
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+
+  // Load hidden IDs from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('panel_hidden')
+      if (stored) setHiddenIds(new Set(JSON.parse(stored)))
+    } catch {}
+  }, [])
+
+  const hideId = (id: string) => {
+    const next = new Set(hiddenIds)
+    next.add(id)
+    setHiddenIds(next)
+    localStorage.setItem('panel_hidden', JSON.stringify(Array.from(next)))
+  }
 
   // Check auth on mount
   useEffect(() => {
@@ -107,7 +127,7 @@ export default function PanelPage() {
           prev.map(s => s.id === solicitudId ? {
             ...s,
             estado: nuevoEstado,
-            ...(monto ? { monto_total: monto, comision_enermax: Math.round(monto * 0.15) } : {}),
+            ...(monto ? { monto_total: monto } : {}),
           } : s)
         )
       }
@@ -115,6 +135,20 @@ export default function PanelPage() {
     setUpdating(null)
     setCompletarModal(null)
     setMontoTrabajo('')
+  }
+
+  const deleteSolicitud = async (id: string) => {
+    try {
+      const res = await fetch('/api/panel/delete', {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({ solicitud_id: id }),
+      })
+      if (res.ok) {
+        setSolicitudes(prev => prev.filter(s => s.id !== id))
+      }
+    } catch {}
+    setConfirmDelete(null)
   }
 
   const estadoConfig: Record<string, { label: string, color: string, icon: typeof Clock }> = {
@@ -178,17 +212,19 @@ export default function PanelPage() {
     )
   }
 
-  const nuevos = solicitudes.filter(s => s.estado === 'pendiente')
-  const enProceso = solicitudes.filter(s => s.estado === 'aceptada' || s.estado === 'en_progreso')
-  const terminados = solicitudes.filter(s => s.estado === 'completada' || s.estado === 'cancelada')
+  // Filter by tab, excluding hidden
+  const visible = solicitudes.filter(s => !hiddenIds.has(s.id))
+  const activas = visible.filter(s => ['pendiente', 'aceptada', 'en_progreso'].includes(s.estado))
+  const completadas = visible.filter(s => s.estado === 'completada')
+  const canceladas = visible.filter(s => s.estado === 'cancelada')
 
-  // Commission totals
-  const comisionTotal = solicitudes
-    .filter(s => s.estado === 'completada' && s.comision_enermax > 0)
-    .reduce((acc, s) => acc + s.comision_enermax, 0)
-  const facturacionTotal = solicitudes
-    .filter(s => s.estado === 'completada' && s.monto_total > 0)
-    .reduce((acc, s) => acc + s.monto_total, 0)
+  const tabList = [
+    { key: 'activas' as Tab, label: 'Activas', count: activas.length, color: 'text-blue-600' },
+    { key: 'completadas' as Tab, label: 'Completadas', count: completadas.length, color: 'text-emerald-600' },
+    { key: 'canceladas' as Tab, label: 'Canceladas', count: canceladas.length, color: 'text-red-600' },
+  ]
+
+  const currentList = tab === 'activas' ? activas : tab === 'completadas' ? completadas : canceladas
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -207,41 +243,30 @@ export default function PanelPage() {
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
           </button>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-white rounded-xl p-3 text-center border border-gray-100">
-            <p className="text-2xl font-bold text-blue-600">{nuevos.length}</p>
-            <p className="text-xs text-gray-500">Nuevos</p>
-          </div>
-          <div className="bg-white rounded-xl p-3 text-center border border-gray-100">
-            <p className="text-2xl font-bold text-amber-600">{enProceso.length}</p>
-            <p className="text-xs text-gray-500">En proceso</p>
-          </div>
-          <div className="bg-white rounded-xl p-3 text-center border border-gray-100">
-            <p className="text-2xl font-bold text-emerald-600">{terminados.length}</p>
-            <p className="text-xs text-gray-500">Terminados</p>
-          </div>
+      <div className="max-w-2xl mx-auto px-4 py-4">
+        {/* Tabs */}
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
+          {tabList.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex-1 text-sm font-medium py-2.5 rounded-lg transition-all ${
+                tab === t.key
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t.label}
+              <span className={`ml-1.5 text-xs ${tab === t.key ? t.color : 'text-gray-400'}`}>
+                {t.count}
+              </span>
+            </button>
+          ))}
         </div>
-
-        {/* Commission summary */}
-        {facturacionTotal > 0 && (
-          <div className="bg-white rounded-xl p-4 mb-4 border border-gray-100 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500">Facturación total</p>
-              <p className="text-lg font-bold text-gray-900">${facturacionTotal.toLocaleString('es-AR')}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500">Comisión Enermax (15%)</p>
-              <p className="text-lg font-bold text-blue-600">${comisionTotal.toLocaleString('es-AR')}</p>
-            </div>
-          </div>
-        )}
 
         {error && (
           <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-4 text-red-600 text-sm">
@@ -251,14 +276,17 @@ export default function PanelPage() {
 
         {loading && solicitudes.length === 0 ? (
           <div className="text-center py-12 text-gray-400">Cargando...</div>
-        ) : solicitudes.length === 0 ? (
+        ) : currentList.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-400 mb-1">No hay solicitudes todavía</p>
-            <p className="text-xs text-gray-300">Se actualiza cada 10 segundos</p>
+            <p className="text-gray-400 mb-1">
+              {tab === 'activas' ? 'No hay solicitudes activas' :
+               tab === 'completadas' ? 'No hay trabajos completados' :
+               'No hay canceladas'}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {solicitudes.map((s) => {
+            {currentList.map((s) => {
               const config = estadoConfig[s.estado] || estadoConfig.pendiente
               const StatusIcon = config.icon
               const tel = s.cliente_telefono.replace(/[\s\-\(\)]/g, '')
@@ -271,14 +299,51 @@ export default function PanelPage() {
 
               return (
                 <div key={s.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                  {/* Status + date */}
+                  {/* Status + date + actions */}
                   <div className="flex items-center justify-between px-4 pt-3">
                     <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${config.color}`}>
                       <StatusIcon className="w-3 h-3" />
                       {config.label}
                     </span>
-                    <span className="text-xs text-gray-400">{formatDate(s.created_at)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">{formatDate(s.created_at)}</span>
+                      <button
+                        onClick={() => hideId(s.id)}
+                        className="p-1 text-gray-300 hover:text-gray-500 transition-colors"
+                        title="Ocultar"
+                      >
+                        <EyeOff className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(confirmDelete === s.id ? null : s.id)}
+                        className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Delete confirmation */}
+                  {confirmDelete === s.id && (
+                    <div className="mx-4 mt-2 bg-red-50 border border-red-100 rounded-lg p-3 flex items-center justify-between">
+                      <p className="text-xs text-red-600">¿Eliminar esta solicitud?</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => deleteSolicitud(s.id)}
+                          className="text-xs bg-red-600 text-white px-3 py-1 rounded-lg font-medium"
+                        >
+                          Sí, eliminar
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(null)}
+                          className="text-xs text-gray-500 px-2 py-1"
+                        >
+                          No
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Info */}
                   <div className="px-4 py-3">
@@ -295,36 +360,38 @@ export default function PanelPage() {
                     {s.notas && !['Consulta / Agendamiento', 'Consulta / Agendamiento sin pago'].includes(s.notas) && (
                       <p className="text-xs text-gray-500 mt-1 ml-5">{s.notas}</p>
                     )}
-                    {/* Show financials for completed jobs */}
                     {s.estado === 'completada' && s.monto_total > 0 && (
-                      <div className="flex items-center gap-3 mt-2 ml-5 text-xs">
-                        <span className="text-gray-500">Cobrado: <strong className="text-gray-900">${s.monto_total.toLocaleString('es-AR')}</strong></span>
-                        <span className="text-blue-600">Comisión: <strong>${s.comision_enermax.toLocaleString('es-AR')}</strong></span>
+                      <div className="flex items-center gap-2 mt-2 ml-5">
+                        <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-xs font-medium text-emerald-700">Cobrado: ${s.monto_total.toLocaleString('es-AR')}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Actions */}
                   <div className="px-4 pb-3 space-y-2">
-                    <div className="flex gap-2">
-                      <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-lg transition-colors bg-emerald-600 text-white hover:bg-emerald-700"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        WhatsApp
-                      </a>
-                      <a
-                        href={`tel:+549${tel}`}
-                        className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-800
-                                   text-sm font-semibold py-2.5 rounded-lg hover:bg-gray-200 transition-colors"
-                      >
-                        <Phone className="w-4 h-4" />
-                        Llamar
-                      </a>
-                    </div>
+                    {/* Contact buttons - only for active */}
+                    {['pendiente', 'aceptada', 'en_progreso'].includes(s.estado) && (
+                      <div className="flex gap-2">
+                        <a
+                          href={whatsappUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-lg transition-colors bg-emerald-600 text-white hover:bg-emerald-700"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          WhatsApp
+                        </a>
+                        <a
+                          href={`tel:+549${tel}`}
+                          className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-800
+                                     text-sm font-semibold py-2.5 rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                          <Phone className="w-4 h-4" />
+                          Llamar
+                        </a>
+                      </div>
+                    )}
 
                     {/* Next status action */}
                     {nextAction && (
@@ -349,7 +416,7 @@ export default function PanelPage() {
                       )
                     )}
 
-                    {/* Completar modal - inline */}
+                    {/* Completar modal - just asks for monto */}
                     {completarModal === s.id && (
                       <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-200">
                         <p className="text-sm font-medium text-gray-700">¿Cuánto se cobró el trabajo?</p>
@@ -364,11 +431,6 @@ export default function PanelPage() {
                             autoFocus
                           />
                         </div>
-                        {montoTrabajo && Number(montoTrabajo) > 0 && (
-                          <p className="text-xs text-gray-500">
-                            Comisión Enermax (15%): <strong className="text-blue-600">${Math.round(Number(montoTrabajo) * 0.15).toLocaleString('es-AR')}</strong>
-                          </p>
-                        )}
                         <div className="flex gap-2">
                           <button
                             onClick={() => {
@@ -396,8 +458,8 @@ export default function PanelPage() {
                       </div>
                     )}
 
-                    {/* Chat toggle */}
-                    {!['completada', 'cancelada'].includes(s.estado) && (
+                    {/* Chat toggle - only for active */}
+                    {['pendiente', 'aceptada', 'en_progreso'].includes(s.estado) && (
                       <button
                         onClick={() => setExpandedChat(expandedChat === s.id ? null : s.id)}
                         className="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100
@@ -413,19 +475,19 @@ export default function PanelPage() {
                       <Chat solicitudId={s.id} autorTipo="profesional" />
                     )}
 
-                    {/* Undo + Cancel */}
-                    <div className="flex items-center justify-between">
-                      {prevEstado ? (
-                        <button
-                          onClick={() => updateEstado(s.id, prevEstado)}
-                          disabled={isUpdating}
-                          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-500 py-1.5 transition-colors"
-                        >
-                          <Undo2 className="w-3 h-3" />
-                          Volver atrás
-                        </button>
-                      ) : <span />}
-                      {['pendiente', 'aceptada', 'en_progreso'].includes(s.estado) && (
+                    {/* Undo + Cancel - only for active */}
+                    {['pendiente', 'aceptada', 'en_progreso'].includes(s.estado) && (
+                      <div className="flex items-center justify-between">
+                        {prevEstado ? (
+                          <button
+                            onClick={() => updateEstado(s.id, prevEstado)}
+                            disabled={isUpdating}
+                            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-500 py-1.5 transition-colors"
+                          >
+                            <Undo2 className="w-3 h-3" />
+                            Volver atrás
+                          </button>
+                        ) : <span />}
                         <button
                           onClick={() => updateEstado(s.id, 'cancelada')}
                           disabled={isUpdating}
@@ -434,12 +496,27 @@ export default function PanelPage() {
                           <X className="w-3 h-3" />
                           Cancelar
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* Show hidden count */}
+        {hiddenIds.size > 0 && (
+          <div className="text-center mt-6">
+            <button
+              onClick={() => {
+                setHiddenIds(new Set())
+                localStorage.removeItem('panel_hidden')
+              }}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Mostrar {hiddenIds.size} oculta{hiddenIds.size > 1 ? 's' : ''}
+            </button>
           </div>
         )}
       </div>

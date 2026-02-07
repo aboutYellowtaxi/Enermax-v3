@@ -148,9 +148,14 @@ export default function LandingPage() {
             <form onSubmit={handleSubmit} className="space-y-3">
               <input
                 type="tel"
-                placeholder="Tu teléfono (ej: 11 1234-5678)"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="Tu teléfono (ej: 1112345678)"
                 value={form.telefono}
-                onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                onChange={(e) => {
+                  const nums = e.target.value.replace(/\D/g, '')
+                  setForm({ ...form, telefono: nums })
+                }}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5
                            text-gray-900 placeholder:text-gray-400 text-base
                            focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500

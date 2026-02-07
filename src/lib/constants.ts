@@ -4,9 +4,9 @@ export const APP_NAME = 'Enermax'
 export const APP_DESCRIPTION = 'Profesionales de confianza para tu hogar'
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://enermax.com.ar'
 
-// Comisión Enermax (15%)
-export const COMISION_PORCENTAJE = 0.15
-export const COMISION_ENERMAX = 0.15
+// Comisión Enermax (30%)
+export const COMISION_PORCENTAJE = 0.30
+export const COMISION_ENERMAX = 0.30
 
 // Recompensa por referido
 export const RECOMPENSA_REFERIDO = 1000 // ARS

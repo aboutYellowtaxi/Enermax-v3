@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     // If completing, require job amount and create commission
     if (estado === 'completada' && monto_trabajo && monto_trabajo > 0) {
-      const comision = Math.round(monto_trabajo * 0.15)
+      const comision = Math.round(monto_trabajo * 0.30)
 
       await supabase
         .from('solicitudes')
@@ -48,13 +48,13 @@ export async function POST(request: NextRequest) {
           .insert({
             solicitud_id,
             monto_trabajo,
-            porcentaje_comision: 0.15,
+            porcentaje_comision: 0.30,
             monto_comision: comision,
             estado: 'pendiente',
           })
       } catch { /* table may not exist yet */ }
 
-      return NextResponse.json({ success: true, estado, comision })
+      return NextResponse.json({ success: true, estado })
     }
 
     // Normal status update

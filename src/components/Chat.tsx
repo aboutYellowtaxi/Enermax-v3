@@ -200,13 +200,23 @@ export default function Chat({ solicitudId, autorTipo, compact = false }: ChatPr
                     : 'bg-gray-100 text-gray-900 rounded-bl-md'
                 }`}>
                   {m.archivo_url && (
-                    <video
-                      src={m.archivo_url}
-                      controls
-                      playsInline
-                      className="rounded-xl mb-1.5 max-w-full"
-                      style={{ maxHeight: 200 }}
-                    />
+                    /\.(jpg|jpeg|png|gif|webp|heic)(\?|$)/i.test(m.archivo_url) ? (
+                      <img
+                        src={m.archivo_url}
+                        alt="Foto"
+                        className="rounded-xl mb-1.5 max-w-full cursor-pointer"
+                        style={{ maxHeight: 200 }}
+                        onClick={() => window.open(m.archivo_url!, '_blank')}
+                      />
+                    ) : (
+                      <video
+                        src={m.archivo_url}
+                        controls
+                        playsInline
+                        className="rounded-xl mb-1.5 max-w-full"
+                        style={{ maxHeight: 200 }}
+                      />
+                    )
                   )}
                   {m.mensaje && <p>{m.mensaje}</p>}
                   <p className={`text-[10px] mt-0.5 ${m.autor_tipo === autorTipo ? 'text-blue-200' : 'text-gray-400'}`}>

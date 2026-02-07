@@ -82,32 +82,20 @@ export async function POST(request: NextRequest) {
       .eq('id', solicitudId)
       .single()
 
-    if (solicitud) {
-      if (autorTipo === 'cliente') {
-        // Notify professional
+    // Notifications are best-effort (profesional_id may be null)
+    if (solicitud && autorTipo === 'cliente' && solicitud.profesional_id) {
+      try {
         await supabase.from('notificaciones').insert({
           profesional_id: solicitud.profesional_id,
           tipo: 'nuevo_mensaje',
           titulo: 'Nuevo mensaje',
-          mensaje: mensaje.substring(0, 50) + (mensaje.length > 50 ? '...' : ''),
+          mensaje: cleanMensaje.substring(0, 50) + (cleanMensaje.length > 50 ? '...' : ''),
           solicitud_id: solicitudId,
           leida: false,
           enviada_email: false,
           enviada_push: false,
         })
-      } else if (autorTipo === 'profesional' && solicitud.cliente_auth_id) {
-        // Notify client
-        await supabase.from('notificaciones').insert({
-          usuario_auth_id: solicitud.cliente_auth_id,
-          tipo: 'nuevo_mensaje',
-          titulo: 'Nuevo mensaje',
-          mensaje: mensaje.substring(0, 50) + (mensaje.length > 50 ? '...' : ''),
-          solicitud_id: solicitudId,
-          leida: false,
-          enviada_email: false,
-          enviada_push: false,
-        })
-      }
+      } catch { /* best effort */ }
     }
 
     return NextResponse.json({ mensaje: data })

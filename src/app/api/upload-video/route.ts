@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { ensureBucket } from '@/lib/storage'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,6 +17,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Archivo muy grande (máx 20MB)' }, { status: 400 })
     }
 
+    // Auto-create bucket if it doesn't exist
+    await ensureBucket('videos', true)
+
     const supabase = createServerClient()
 
     const ext = file.name.split('.').pop() || 'bin'
@@ -31,10 +35,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Storage error:', error)
-      return NextResponse.json(
-        { error: 'Error al subir. Verificá que el bucket "videos" exista en Supabase Storage.' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Error al subir el archivo' }, { status: 500 })
     }
 
     // Get public URL

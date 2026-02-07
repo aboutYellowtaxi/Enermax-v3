@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { CheckCircle, Phone, MessageSquare, Zap, ArrowLeft } from 'lucide-react'
+import { CheckCircle, Phone, MessageSquare, Zap, ArrowLeft, Shield } from 'lucide-react'
 import Link from 'next/link'
 
 const PROFESIONAL_TELEFONO = '1131449673'
@@ -13,30 +13,28 @@ function ExitoContent() {
   const solicitudId = searchParams.get('solicitud')
 
   const whatsappUrl = `https://wa.me/549${PROFESIONAL_TELEFONO}?text=${encodeURIComponent(
-    `Hola ${PROFESIONAL_NOMBRE}, acabo de agendar una visita diagnóstico por Enermax (ref: ${solicitudId || 'N/A'})`
+    `Hola ${PROFESIONAL_NOMBRE}, acabo de agendar una visita diagnóstico por Enermax`
   )}`
 
   return (
-    <div className="min-h-screen bg-dark-950 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
-        {/* Success icon */}
-        <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-fade-in">
-          <CheckCircle className="w-12 h-12 text-emerald-400" />
+        <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle className="w-12 h-12 text-emerald-500" />
         </div>
 
-        <h1 className="text-3xl font-bold text-dark-50 mb-3 animate-slide-up">
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">
           ¡Listo!
         </h1>
 
-        <p className="text-lg text-dark-300 mb-2">
-          Tu visita diagnóstico está agendada.
+        <p className="text-lg text-gray-600 mb-2">
+          Tu visita diagnóstico está confirmada.
         </p>
-        <p className="text-dark-400 mb-8">
-          <strong className="text-dark-200">{PROFESIONAL_NOMBRE}</strong> te va a contactar
-          en menos de <strong className="text-primary-400">30 minutos</strong> para coordinar.
+        <p className="text-gray-500 mb-8">
+          <strong className="text-gray-800">{PROFESIONAL_NOMBRE}</strong> te va a contactar
+          en menos de <strong className="text-blue-600">30 minutos</strong>.
         </p>
 
-        {/* Contact options */}
         <div className="space-y-3 mb-8">
           <a
             href={whatsappUrl}
@@ -51,34 +49,30 @@ function ExitoContent() {
 
           <a
             href={`tel:+549${PROFESIONAL_TELEFONO}`}
-            className="w-full flex items-center justify-center gap-3 bg-dark-800 hover:bg-dark-700
-                       text-dark-100 font-semibold px-6 py-4 rounded-xl border border-dark-700 transition-colors"
+            className="w-full flex items-center justify-center gap-3 bg-gray-100 hover:bg-gray-200
+                       text-gray-800 font-semibold px-6 py-4 rounded-xl transition-colors"
           >
             <Phone className="w-5 h-5" />
-            Llamar al {PROFESIONAL_TELEFONO}
+            Llamar
           </a>
         </div>
 
-        {/* Ref number */}
+        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400 mb-6">
+          <Shield className="w-3.5 h-3.5" />
+          <span>Tu pago está protegido. Si no te contactan, te devolvemos el dinero.</span>
+        </div>
+
         {solicitudId && (
-          <p className="text-xs text-dark-600 mb-6">
-            Referencia: {solicitudId}
-          </p>
+          <p className="text-xs text-gray-300 mb-4">Ref: {solicitudId}</p>
         )}
 
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm text-dark-400 hover:text-dark-200 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver al inicio
         </Link>
-      </div>
-
-      {/* Footer */}
-      <div className="absolute bottom-6 flex items-center gap-2 text-dark-600 text-sm">
-        <Zap className="w-4 h-4" />
-        <span>Enermax</span>
       </div>
     </div>
   )
@@ -87,8 +81,8 @@ function ExitoContent() {
 export default function PagoExitoPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-dark-950 flex items-center justify-center">
-        <div className="text-dark-400">Cargando...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-gray-400">Cargando...</div>
       </div>
     }>
       <ExitoContent />

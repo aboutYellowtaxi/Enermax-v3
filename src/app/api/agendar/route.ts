@@ -7,17 +7,15 @@ const client = new MercadoPagoConfig({
 })
 
 const PRECIO_DIAGNOSTICO = 10000
-const COMISION_ENERMAX = 0.15 // 15%
-const PROFESIONAL_TELEFONO = '5491131449673'
-const PROFESIONAL_NOMBRE = 'Leonel Vivas'
+const COMISION_ENERMAX = 0.15
 
 export async function POST(request: NextRequest) {
   try {
-    const { nombre, telefono, direccion, descripcion } = await request.json()
+    const { telefono, direccion, descripcion, lat, lng } = await request.json()
 
-    if (!nombre || !telefono || !direccion) {
+    if (!telefono || !direccion) {
       return NextResponse.json(
-        { error: 'Completá nombre, teléfono y dirección' },
+        { error: 'Necesitamos tu teléfono y ubicación' },
         { status: 400 }
       )
     }
@@ -31,10 +29,12 @@ export async function POST(request: NextRequest) {
     const { data: solicitud, error: dbError } = await supabase
       .from('solicitudes')
       .insert({
-        cliente_nombre: nombre,
+        cliente_nombre: telefono, // Use phone as identifier (nombre is NOT NULL in schema)
         cliente_telefono: telefono,
-        cliente_email: `lead-${Date.now()}@enermax.com.ar`,
+        cliente_email: `lead-${Date.now()}@enermax.app`,
         direccion,
+        lat: lat || null,
+        lng: lng || null,
         notas: descripcion || 'Visita diagnóstico eléctrico',
         monto_total: PRECIO_DIAGNOSTICO,
         comision_enermax: comision,
@@ -42,13 +42,13 @@ export async function POST(request: NextRequest) {
         estado: 'pendiente_pago',
         score_fraude: 0,
       })
-      .select()
+      .select('id')
       .single()
 
     if (dbError || !solicitud) {
       console.error('DB Error:', dbError)
       return NextResponse.json(
-        { error: 'Error al crear la solicitud' },
+        { error: 'Error al crear la solicitud. Intentá de nuevo.' },
         { status: 500 }
       )
     }
@@ -61,18 +61,15 @@ export async function POST(request: NextRequest) {
           {
             id: solicitud.id,
             title: 'Visita Diagnóstico Eléctrico - Enermax',
-            description: `Electricista verificado visita tu domicilio. ${direccion}`,
+            description: `Electricista matriculado visita tu domicilio`,
             quantity: 1,
             currency_id: 'ARS',
             unit_price: PRECIO_DIAGNOSTICO,
           },
         ],
         payer: {
-          name: nombre,
-          email: `lead-${Date.now()}@enermax.com.ar`,
-          phone: {
-            number: telefono,
-          },
+          email: `lead-${Date.now()}@enermax.app`,
+          phone: { number: telefono },
         },
         back_urls: {
           success: `${appUrl}/pago/exito?solicitud=${solicitud.id}`,
@@ -89,6 +86,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    if (!preference.init_point) {
+      return NextResponse.json(
+        { error: 'Error al generar el link de pago. Intentá de nuevo.' },
+        { status: 500 }
+      )
+    }
+
     // Create pago record
     await supabase.from('pagos').insert({
       solicitud_id: solicitud.id,
@@ -98,13 +102,6 @@ export async function POST(request: NextRequest) {
       estado: 'pendiente',
     })
 
-    // Notify professional via WhatsApp API (URL scheme for now)
-    // In production, use Twilio/WhatsApp Business API
-    console.log(
-      `[ENERMAX] Nuevo pedido! Cliente: ${nombre}, Tel: ${telefono}, Dir: ${direccion}. ` +
-      `Notificar a ${PROFESIONAL_NOMBRE} (${PROFESIONAL_TELEFONO})`
-    )
-
     return NextResponse.json({
       success: true,
       init_point: preference.init_point,
@@ -113,7 +110,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error in /api/agendar:', error)
     return NextResponse.json(
-      { error: error.message || 'Error al procesar' },
+      { error: 'Hubo un error. Por favor intentá de nuevo.' },
       { status: 500 }
     )
   }

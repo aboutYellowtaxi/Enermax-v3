@@ -271,14 +271,15 @@ export default function LandingPage() {
               {/* Trust line */}
               <div className="flex items-center justify-center gap-4 pt-1 text-xs text-gray-400">
                 <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Matriculado</span>
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Respuesta inmediata</span>
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Seguimiento en vivo</span>
                 <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Garantía</span>
               </div>
             </form>
 
-            {/* Trust */}
+            {/* Already booked link */}
             <p className="text-center text-xs text-gray-400 mt-4">
-              Seguí tu solicitud en tiempo real después de agendar
+              ¿Ya agendaste?{' '}
+              <a href="/mi-solicitud" className="text-blue-600 hover:underline">Consultá tu solicitud</a>
             </p>
           </div>
         </section>

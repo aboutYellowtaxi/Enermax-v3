@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Zap, Phone, MapPin, MessageSquare, Clock, CheckCircle, RefreshCw, AlertCircle, Truck, Wrench, X } from 'lucide-react'
+import { Zap, Phone, MapPin, MessageSquare, Clock, CheckCircle, RefreshCw, AlertCircle, Truck, Wrench, X, Undo2 } from 'lucide-react'
 
 interface Solicitud {
   id: string
@@ -84,6 +84,14 @@ export default function PanelPage() {
     return null
   }
 
+  const getPrevEstado = (estado: string): string | null => {
+    if (estado === 'aceptada') return 'pendiente'
+    if (estado === 'en_progreso') return 'aceptada'
+    if (estado === 'completada') return 'en_progreso'
+    if (estado === 'cancelada') return 'pendiente'
+    return null
+  }
+
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr)
     return d.toLocaleDateString('es-AR', {
@@ -159,6 +167,7 @@ export default function PanelPage() {
                 'Hola, soy Leonel de Enermax. Recibí tu solicitud de diagnóstico eléctrico. ¿Cuándo te queda bien coordinar la visita?'
               )}`
               const nextAction = getNextAction(s.estado)
+              const prevEstado = getPrevEstado(s.estado)
               const esGratis = s.monto_total === 0
               const isUpdating = updating === s.id
 
@@ -234,17 +243,29 @@ export default function PanelPage() {
                       </button>
                     )}
 
-                    {/* Cancel option for active ones */}
-                    {['pendiente', 'aceptada', 'en_progreso'].includes(s.estado) && (
-                      <button
-                        onClick={() => updateEstado(s.id, 'cancelada')}
-                        disabled={isUpdating}
-                        className="w-full flex items-center justify-center gap-1.5 text-xs text-gray-400 hover:text-red-500 py-1.5 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                        Cancelar solicitud
-                      </button>
-                    )}
+                    {/* Undo + Cancel row */}
+                    <div className="flex items-center justify-between">
+                      {prevEstado ? (
+                        <button
+                          onClick={() => updateEstado(s.id, prevEstado)}
+                          disabled={isUpdating}
+                          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-500 py-1.5 transition-colors"
+                        >
+                          <Undo2 className="w-3 h-3" />
+                          Volver atrás
+                        </button>
+                      ) : <span />}
+                      {['pendiente', 'aceptada', 'en_progreso'].includes(s.estado) && (
+                        <button
+                          onClick={() => updateEstado(s.id, 'cancelada')}
+                          disabled={isUpdating}
+                          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 py-1.5 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )

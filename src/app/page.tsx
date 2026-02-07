@@ -154,10 +154,10 @@ export default function LandingPage() {
               <span className="text-xs text-gray-500">5 años exp.</span>
             </div>
 
-            {/* Urgency */}
+            {/* Status */}
             <div className="flex items-center justify-center gap-2 mb-5">
               <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-              <span className="text-sm text-emerald-700 font-medium">Disponible hoy · Turnos limitados</span>
+              <span className="text-sm text-emerald-700 font-medium">Disponible · Seguimiento en tiempo real</span>
             </div>
 
             {/* FORM - Always visible, no extra click needed */}
@@ -276,9 +276,9 @@ export default function LandingPage() {
               </div>
             </form>
 
-            {/* Social proof */}
+            {/* Trust */}
             <p className="text-center text-xs text-gray-400 mt-4">
-              7 personas agendaron esta semana en tu zona
+              Seguí tu solicitud en tiempo real después de agendar
             </p>
           </div>
         </section>

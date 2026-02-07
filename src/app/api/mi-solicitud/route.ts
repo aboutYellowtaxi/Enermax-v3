@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
+  if (!rateLimit(`mi-solicitud:${ip}`, 10, 3600000)) {
+    return NextResponse.json(
+      { error: 'Demasiadas consultas. Intentá en un rato.' },
+      { status: 429 }
+    )
+  }
+
   try {
     const { telefono } = await request.json()
 
@@ -15,10 +24,11 @@ export async function POST(request: NextRequest) {
     const supabase = createServerClient()
     const cleanPhone = telefono.replace(/[\s\-\(\)]/g, '')
 
+    // Use exact match on cleaned phone (no wildcards)
     const { data, error } = await supabase
       .from('solicitudes')
       .select('id, estado, created_at')
-      .or(`cliente_telefono.ilike.%${cleanPhone}%,cliente_telefono.ilike.%${telefono.trim()}%`)
+      .or(`cliente_telefono.eq.${cleanPhone},cliente_telefono.eq.${telefono.trim()}`)
       .order('created_at', { ascending: false })
       .limit(5)
 

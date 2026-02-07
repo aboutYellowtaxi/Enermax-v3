@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { notificarNuevoCliente } from '@/lib/email'
+import { rateLimit } from '@/lib/rate-limit'
+import { sanitizeString } from '@/lib/sanitize'
 
 export async function POST(request: NextRequest) {
+  // Rate limit by IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
+  if (!rateLimit(`agendar:${ip}`, 5, 3600000)) {
+    return NextResponse.json(
+      { error: 'Demasiadas solicitudes. Intentá en un rato.' },
+      { status: 429 }
+    )
+  }
+
   try {
-    const { telefono, direccion, descripcion, lat, lng } = await request.json()
+    const body = await request.json()
+    const telefono = sanitizeString(body.telefono || '', 20)
+    const direccion = sanitizeString(body.direccion || '', 200)
+    const descripcion = sanitizeString(body.descripcion || '', 500)
+    const lat = body.lat || null
+    const lng = body.lng || null
 
     if (!telefono) {
       return NextResponse.json(
@@ -22,9 +38,9 @@ export async function POST(request: NextRequest) {
         cliente_telefono: telefono,
         cliente_email: `lead-${Date.now()}@enermax.app`,
         direccion: direccion || 'Sin especificar',
-        lat: lat || null,
-        lng: lng || null,
-        notas: descripcion || 'Consulta / Agendamiento sin pago',
+        lat,
+        lng,
+        notas: descripcion || 'Consulta / Agendamiento',
         monto_total: 0,
         comision_enermax: 0,
         monto_profesional: 0,
@@ -59,12 +75,11 @@ export async function POST(request: NextRequest) {
     ])
 
     // Notify admin
-    notificarNuevoCliente('pago_confirmado', {
+    notificarNuevoCliente('nueva_solicitud', {
       telefono,
       direccion: direccion || 'Sin especificar',
-      descripcion: descripcion || 'Agendamiento sin pago',
+      descripcion: descripcion || 'Agendamiento',
       solicitudId: solicitud.id,
-      monto: 0,
     }).catch(() => {})
 
     return NextResponse.json({

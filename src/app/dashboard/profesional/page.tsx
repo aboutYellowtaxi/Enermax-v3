@@ -98,7 +98,7 @@ export default function ProfesionalDashboard() {
   }, [profesionalId])
 
   // Calculate stats
-  const confirmadas = solicitudes.filter(s => s.estado === 'confirmada')
+  const confirmadas = solicitudes.filter(s => s.estado === 'completada')
   const totalGanado = confirmadas.reduce((acc, s) => acc + s.monto_profesional, 0)
 
   // Calculate this month
@@ -109,13 +109,13 @@ export default function ProfesionalDashboard() {
     new Date(s.created_at) >= mesActual
   )
   const gananciasMes = solicitudesMes
-    .filter(s => s.estado === 'confirmada')
+    .filter(s => s.estado === 'completada')
     .reduce((acc, s) => acc + s.monto_profesional, 0)
-  const trabajosMes = solicitudesMes.filter(s => s.estado === 'confirmada').length
+  const trabajosMes = solicitudesMes.filter(s => s.estado === 'completada').length
 
   const pendientes = solicitudes.filter(s => s.estado === 'pendiente')
   const activas = solicitudes.filter(s => ['aceptada', 'en_progreso', 'completada'].includes(s.estado))
-  const historial = solicitudes.filter(s => ['confirmada', 'cancelada'].includes(s.estado))
+  const historial = solicitudes.filter(s => ['completada', 'cancelada'].includes(s.estado))
 
   if (authLoading || loading) {
     return (

@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Zap, Phone, MapPin, MessageSquare, Clock, CheckCircle, RefreshCw, AlertCircle, Truck, Wrench, X, Undo2, ChevronDown, Video } from 'lucide-react'
+import { Zap, Phone, MapPin, MessageSquare, Clock, CheckCircle, RefreshCw, AlertCircle, Truck, Wrench, X, Undo2, ChevronDown, DollarSign, Lock } from 'lucide-react'
 import Chat from '@/components/Chat'
-import VideoCall from '@/components/VideoCall'
 
 interface Solicitud {
   id: string
@@ -12,6 +11,7 @@ interface Solicitud {
   direccion: string
   notas: string
   monto_total: number
+  comision_enermax: number
   estado: string
   created_at: string
 }
@@ -28,11 +28,45 @@ export default function PanelPage() {
   const [error, setError] = useState('')
   const [updating, setUpdating] = useState<string | null>(null)
   const [expandedChat, setExpandedChat] = useState<string | null>(null)
+  const [secret, setSecret] = useState('')
+  const [authed, setAuthed] = useState(false)
+  const [secretInput, setSecretInput] = useState('')
+  const [completarModal, setCompletarModal] = useState<string | null>(null)
+  const [montoTrabajo, setMontoTrabajo] = useState('')
+
+  // Check auth on mount
+  useEffect(() => {
+    const stored = sessionStorage.getItem('panel_secret')
+    if (stored) {
+      setSecret(stored)
+      setAuthed(true)
+    }
+  }, [])
+
+  const handleAuth = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (secretInput.trim()) {
+      sessionStorage.setItem('panel_secret', secretInput.trim())
+      setSecret(secretInput.trim())
+      setAuthed(true)
+    }
+  }
+
+  const headers = () => ({
+    'Content-Type': 'application/json',
+    'x-panel-secret': secret,
+  })
 
   const fetchSolicitudes = async () => {
     setError('')
     try {
-      const res = await fetch('/api/panel')
+      const res = await fetch('/api/panel', { headers: { 'x-panel-secret': secret } })
+      if (res.status === 401) {
+        sessionStorage.removeItem('panel_secret')
+        setAuthed(false)
+        setSecret('')
+        return
+      }
       const data = await res.json()
       if (data.solicitudes) {
         setSolicitudes(data.solicitudes)
@@ -46,34 +80,45 @@ export default function PanelPage() {
   }
 
   useEffect(() => {
+    if (!authed) return
     fetchSolicitudes()
     const interval = setInterval(fetchSolicitudes, 10000)
     return () => clearInterval(interval)
-  }, [])
+  }, [authed, secret])
 
-  const updateEstado = async (solicitudId: string, nuevoEstado: string) => {
+  const updateEstado = async (solicitudId: string, nuevoEstado: string, monto?: number) => {
     setUpdating(solicitudId)
     try {
+      const body: any = { solicitud_id: solicitudId, estado: nuevoEstado }
+      if (monto) body.monto_trabajo = monto
       const res = await fetch('/api/panel/estado', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ solicitud_id: solicitudId, estado: nuevoEstado }),
+        headers: headers(),
+        body: JSON.stringify(body),
       })
+      if (res.status === 401) {
+        sessionStorage.removeItem('panel_secret')
+        setAuthed(false)
+        return
+      }
       const data = await res.json()
       if (data.success) {
         setSolicitudes(prev =>
-          prev.map(s => s.id === solicitudId ? { ...s, estado: nuevoEstado } : s)
+          prev.map(s => s.id === solicitudId ? {
+            ...s,
+            estado: nuevoEstado,
+            ...(monto ? { monto_total: monto, comision_enermax: Math.round(monto * 0.15) } : {}),
+          } : s)
         )
       }
-    } catch {
-      // silent fail, user can retry
-    }
+    } catch { /* silent */ }
     setUpdating(null)
+    setCompletarModal(null)
+    setMontoTrabajo('')
   }
 
   const estadoConfig: Record<string, { label: string, color: string, icon: typeof Clock }> = {
     pendiente: { label: 'Nuevo', color: 'text-blue-600 bg-blue-50', icon: Clock },
-    pendiente_pago: { label: 'Pendiente pago', color: 'text-amber-600 bg-amber-50', icon: Clock },
     aceptada: { label: 'Contactado', color: 'text-indigo-600 bg-indigo-50', icon: Phone },
     en_progreso: { label: 'En curso', color: 'text-amber-600 bg-amber-50', icon: Truck },
     completada: { label: 'Completado', color: 'text-emerald-600 bg-emerald-50', icon: CheckCircle },
@@ -81,9 +126,9 @@ export default function PanelPage() {
   }
 
   const getNextAction = (estado: string) => {
-    if (estado === 'pendiente') return ESTADOS_FLOW[0] // → Contacté
-    if (estado === 'aceptada') return ESTADOS_FLOW[1]  // → En camino
-    if (estado === 'en_progreso') return ESTADOS_FLOW[2] // → Terminado
+    if (estado === 'pendiente') return ESTADOS_FLOW[0]
+    if (estado === 'aceptada') return ESTADOS_FLOW[1]
+    if (estado === 'en_progreso') return ESTADOS_FLOW[2]
     return null
   }
 
@@ -102,9 +147,48 @@ export default function PanelPage() {
     })
   }
 
-  const nuevos = solicitudes.filter(s => s.estado === 'pendiente' || s.estado === 'pendiente_pago')
+  // Auth screen
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <form onSubmit={handleAuth} className="w-full max-w-xs space-y-4">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Lock className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-lg font-bold text-gray-900">Panel Enermax</h1>
+            <p className="text-sm text-gray-500">Ingresá la contraseña</p>
+          </div>
+          <input
+            type="password"
+            value={secretInput}
+            onChange={(e) => setSecretInput(e.target.value)}
+            placeholder="Contraseña del panel"
+            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            autoFocus
+          />
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors"
+          >
+            Entrar
+          </button>
+        </form>
+      </div>
+    )
+  }
+
+  const nuevos = solicitudes.filter(s => s.estado === 'pendiente')
   const enProceso = solicitudes.filter(s => s.estado === 'aceptada' || s.estado === 'en_progreso')
   const terminados = solicitudes.filter(s => s.estado === 'completada' || s.estado === 'cancelada')
+
+  // Commission totals
+  const comisionTotal = solicitudes
+    .filter(s => s.estado === 'completada' && s.comision_enermax > 0)
+    .reduce((acc, s) => acc + s.comision_enermax, 0)
+  const facturacionTotal = solicitudes
+    .filter(s => s.estado === 'completada' && s.monto_total > 0)
+    .reduce((acc, s) => acc + s.monto_total, 0)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -130,7 +214,7 @@ export default function PanelPage() {
 
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="bg-white rounded-xl p-3 text-center border border-gray-100">
             <p className="text-2xl font-bold text-blue-600">{nuevos.length}</p>
             <p className="text-xs text-gray-500">Nuevos</p>
@@ -145,20 +229,32 @@ export default function PanelPage() {
           </div>
         </div>
 
-        {/* Error */}
+        {/* Commission summary */}
+        {facturacionTotal > 0 && (
+          <div className="bg-white rounded-xl p-4 mb-4 border border-gray-100 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500">Facturación total</p>
+              <p className="text-lg font-bold text-gray-900">${facturacionTotal.toLocaleString('es-AR')}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-500">Comisión Enermax (15%)</p>
+              <p className="text-lg font-bold text-blue-600">${comisionTotal.toLocaleString('es-AR')}</p>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-4 text-red-600 text-sm">
             {error}
           </div>
         )}
 
-        {/* Loading */}
         {loading && solicitudes.length === 0 ? (
           <div className="text-center py-12 text-gray-400">Cargando...</div>
         ) : solicitudes.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-400 mb-1">No hay solicitudes todavía</p>
-            <p className="text-xs text-gray-300">Se actualiza cada 30 segundos</p>
+            <p className="text-xs text-gray-300">Se actualiza cada 10 segundos</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -167,30 +263,20 @@ export default function PanelPage() {
               const StatusIcon = config.icon
               const tel = s.cliente_telefono.replace(/[\s\-\(\)]/g, '')
               const whatsappUrl = `https://wa.me/549${tel}?text=${encodeURIComponent(
-                'Hola, soy Leonel de Enermax. Recibí tu solicitud de diagnóstico eléctrico. ¿Cuándo te queda bien coordinar la visita?'
+                'Hola, soy Leonel de Enermax. Recibí tu solicitud. ¿Cuándo te queda bien coordinar la visita?'
               )}`
               const nextAction = getNextAction(s.estado)
               const prevEstado = getPrevEstado(s.estado)
-              const esGratis = s.monto_total === 0
               const isUpdating = updating === s.id
 
               return (
                 <div key={s.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                  {/* Status + date + type */}
+                  {/* Status + date */}
                   <div className="flex items-center justify-between px-4 pt-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${config.color}`}>
-                        <StatusIcon className="w-3 h-3" />
-                        {config.label}
-                      </span>
-                      {esGratis ? (
-                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Gratis</span>
-                      ) : (
-                        <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
-                          ${s.monto_total?.toLocaleString('es-AR')}
-                        </span>
-                      )}
-                    </div>
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${config.color}`}>
+                      <StatusIcon className="w-3 h-3" />
+                      {config.label}
+                    </span>
                     <span className="text-xs text-gray-400">{formatDate(s.created_at)}</span>
                   </div>
 
@@ -206,14 +292,20 @@ export default function PanelPage() {
                         <span className="text-sm text-gray-700">{s.direccion}</span>
                       </div>
                     )}
-                    {s.notas && !['Visita diagnóstico eléctrico', 'Consulta / Agendamiento sin pago'].includes(s.notas) && (
+                    {s.notas && !['Consulta / Agendamiento', 'Consulta / Agendamiento sin pago'].includes(s.notas) && (
                       <p className="text-xs text-gray-500 mt-1 ml-5">{s.notas}</p>
+                    )}
+                    {/* Show financials for completed jobs */}
+                    {s.estado === 'completada' && s.monto_total > 0 && (
+                      <div className="flex items-center gap-3 mt-2 ml-5 text-xs">
+                        <span className="text-gray-500">Cobrado: <strong className="text-gray-900">${s.monto_total.toLocaleString('es-AR')}</strong></span>
+                        <span className="text-blue-600">Comisión: <strong>${s.comision_enermax.toLocaleString('es-AR')}</strong></span>
+                      </div>
                     )}
                   </div>
 
                   {/* Actions */}
                   <div className="px-4 pb-3 space-y-2">
-                    {/* Contact buttons */}
                     <div className="flex gap-2">
                       <a
                         href={whatsappUrl}
@@ -236,17 +328,75 @@ export default function PanelPage() {
 
                     {/* Next status action */}
                     {nextAction && (
-                      <button
-                        onClick={() => updateEstado(s.id, nextAction.estado)}
-                        disabled={isUpdating}
-                        className={`w-full flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50 ${nextAction.color}`}
-                      >
-                        <nextAction.icon className="w-4 h-4" />
-                        {isUpdating ? 'Actualizando...' : `Marcar: ${nextAction.label}`}
-                      </button>
+                      nextAction.estado === 'completada' ? (
+                        <button
+                          onClick={() => setCompletarModal(s.id)}
+                          disabled={isUpdating}
+                          className={`w-full flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50 ${nextAction.color}`}
+                        >
+                          <nextAction.icon className="w-4 h-4" />
+                          Marcar: Terminado
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => updateEstado(s.id, nextAction.estado)}
+                          disabled={isUpdating}
+                          className={`w-full flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50 ${nextAction.color}`}
+                        >
+                          <nextAction.icon className="w-4 h-4" />
+                          {isUpdating ? 'Actualizando...' : `Marcar: ${nextAction.label}`}
+                        </button>
+                      )
                     )}
 
-                    {/* Chat + Video toggle */}
+                    {/* Completar modal - inline */}
+                    {completarModal === s.id && (
+                      <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-200">
+                        <p className="text-sm font-medium text-gray-700">¿Cuánto se cobró el trabajo?</p>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                          <input
+                            type="number"
+                            value={montoTrabajo}
+                            onChange={(e) => setMontoTrabajo(e.target.value)}
+                            placeholder="Ej: 25000"
+                            className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                            autoFocus
+                          />
+                        </div>
+                        {montoTrabajo && Number(montoTrabajo) > 0 && (
+                          <p className="text-xs text-gray-500">
+                            Comisión Enermax (15%): <strong className="text-blue-600">${Math.round(Number(montoTrabajo) * 0.15).toLocaleString('es-AR')}</strong>
+                          </p>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              const monto = Number(montoTrabajo)
+                              if (monto > 0) updateEstado(s.id, 'completada', monto)
+                            }}
+                            disabled={!montoTrabajo || Number(montoTrabajo) <= 0}
+                            className="flex-1 bg-emerald-600 text-white font-semibold py-2 rounded-lg text-sm disabled:opacity-40"
+                          >
+                            Confirmar
+                          </button>
+                          <button
+                            onClick={() => updateEstado(s.id, 'completada')}
+                            className="px-4 bg-gray-200 text-gray-600 font-medium py-2 rounded-lg text-sm"
+                          >
+                            Sin monto
+                          </button>
+                          <button
+                            onClick={() => { setCompletarModal(null); setMontoTrabajo('') }}
+                            className="px-3 text-gray-400 hover:text-gray-600 text-sm"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Chat toggle */}
                     {!['completada', 'cancelada'].includes(s.estado) && (
                       <button
                         onClick={() => setExpandedChat(expandedChat === s.id ? null : s.id)}
@@ -259,15 +409,11 @@ export default function PanelPage() {
                       </button>
                     )}
 
-                    {/* Expanded chat + video */}
                     {expandedChat === s.id && (
-                      <div className="space-y-2">
-                        <VideoCall solicitudId={s.id} role="profesional" />
-                        <Chat solicitudId={s.id} autorTipo="profesional" />
-                      </div>
+                      <Chat solicitudId={s.id} autorTipo="profesional" />
                     )}
 
-                    {/* Undo + Cancel row */}
+                    {/* Undo + Cancel */}
                     <div className="flex items-center justify-between">
                       {prevEstado ? (
                         <button

@@ -57,10 +57,10 @@ export default function ClienteDashboard() {
   }, [user])
 
   const solicitudesActivas = solicitudes.filter(s =>
-    !['confirmada', 'cancelada'].includes(s.estado)
+    !['completada', 'cancelada'].includes(s.estado)
   )
   const historial = solicitudes.filter(s =>
-    ['confirmada', 'cancelada'].includes(s.estado)
+    ['completada', 'cancelada'].includes(s.estado)
   )
 
   if (authLoading || loading) {

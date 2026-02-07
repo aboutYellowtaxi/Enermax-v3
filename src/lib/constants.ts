@@ -60,14 +60,11 @@ export const DIAS_SEMANA = [
 
 // Estados de solicitud
 export const ESTADOS_SOLICITUD = {
-  pendiente_pago: { label: 'Esperando pago', color: 'bg-yellow-500/10 text-yellow-400', icon: 'Clock' },
-  pendiente: { label: 'Esperando aceptación', color: 'bg-blue-500/10 text-blue-400', icon: 'Clock' },
+  pendiente: { label: 'Esperando respuesta', color: 'bg-blue-500/10 text-blue-400', icon: 'Clock' },
   aceptada: { label: 'Profesional confirmado', color: 'bg-blue-500/10 text-blue-400', icon: 'CheckCircle' },
   en_progreso: { label: 'Trabajo en progreso', color: 'bg-purple-500/10 text-purple-400', icon: 'Wrench' },
   completada: { label: 'Trabajo terminado', color: 'bg-green-500/10 text-green-400', icon: 'Check' },
-  confirmada: { label: 'Confirmado y pagado', color: 'bg-green-500/10 text-green-400', icon: 'BadgeCheck' },
   cancelada: { label: 'Cancelado', color: 'bg-red-500/10 text-red-400', icon: 'X' },
-  disputa: { label: 'En revisión', color: 'bg-orange-500/10 text-orange-400', icon: 'AlertTriangle' },
 } as const
 
 // Formateo de moneda Argentina

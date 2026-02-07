@@ -286,14 +286,11 @@ export type Database = {
 }
 
 export type EstadoSolicitud =
-  | 'pendiente_pago'
   | 'pendiente'
   | 'aceptada'
   | 'en_progreso'
   | 'completada'
-  | 'confirmada'
   | 'cancelada'
-  | 'disputa'
 
 export type EstadoPago =
   | 'pendiente'

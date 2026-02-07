@@ -12,7 +12,6 @@ interface SolicitudResumen {
 
 const estadoConfig: Record<string, { label: string, color: string, icon: typeof Clock }> = {
   pendiente: { label: 'En revisión', color: 'text-blue-600 bg-blue-50', icon: Clock },
-  pendiente_pago: { label: 'Pendiente de pago', color: 'text-amber-600 bg-amber-50', icon: Clock },
   aceptada: { label: 'Contactado', color: 'text-indigo-600 bg-indigo-50', icon: Phone },
   en_progreso: { label: 'En curso', color: 'text-amber-600 bg-amber-50', icon: Truck },
   completada: { label: 'Completado', color: 'text-emerald-600 bg-emerald-50', icon: CheckCircle },

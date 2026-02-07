@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle, Clock, Phone, MessageSquare, Zap, MapPin, Truck, Wrench, Bookmark, Video } from 'lucide-react'
+import { CheckCircle, Clock, Phone, MessageSquare, Zap, MapPin, Truck, Wrench, Bookmark, Star } from 'lucide-react'
 import Link from 'next/link'
 import Chat from '@/components/Chat'
 import VideoRecorder from '@/components/VideoRecorder'
@@ -35,6 +35,13 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
   const [notFound, setNotFound] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  // Review state
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  const [reviewDone, setReviewDone] = useState(false)
+  const [existingReview, setExistingReview] = useState<{ calificacion: number } | null>(null)
+
   const fetchStatus = async () => {
     try {
       const res = await fetch(`/api/seguimiento/${params.id}`)
@@ -53,6 +60,40 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
     const interval = setInterval(fetchStatus, 10000)
     return () => clearInterval(interval)
   }, [params.id])
+
+  // Check if review exists
+  useEffect(() => {
+    fetch(`/api/reviews?solicitud_id=${params.id}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.review) {
+          setExistingReview(d.review)
+          setReviewDone(true)
+        }
+      })
+      .catch(() => {})
+  }, [params.id])
+
+  const submitReview = async () => {
+    if (reviewRating === 0) return
+    setReviewSubmitting(true)
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          solicitud_id: params.id,
+          calificacion: reviewRating,
+          comentario: reviewComment || null,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setReviewDone(true)
+      }
+    } catch { /* silent */ }
+    setReviewSubmitting(false)
+  }
 
   if (loading) {
     return (
@@ -107,7 +148,7 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
       <main className="flex-1 pt-14 pb-4 px-4">
         <div className="max-w-lg mx-auto">
 
-          {/* Professional card - the first thing they see */}
+          {/* Professional card */}
           <div className="bg-white rounded-2xl p-4 mb-3 border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">L</div>
@@ -134,7 +175,7 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
             </div>
           </div>
 
-          {/* Progress bar - compact horizontal */}
+          {/* Progress bar */}
           {!esCancelada && (
             <div className="bg-white rounded-2xl px-4 py-3 mb-3 border border-gray-100">
               <div className="flex items-center justify-between mb-2">
@@ -156,7 +197,6 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
                   )
                 })}
               </div>
-              {/* Progress line */}
               <div className="flex gap-1">
                 {PASOS.map((_, i) => (
                   <div
@@ -168,7 +208,7 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
             </div>
           )}
 
-          {/* Status message for special states */}
+          {/* Cancelled */}
           {esCancelada && (
             <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-3 text-center">
               <p className="font-semibold text-red-700 text-sm">Solicitud cancelada</p>
@@ -177,20 +217,72 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
             </div>
           )}
 
+          {/* Completed + Review */}
           {esCompletada && (
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-3 text-center">
-              <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-              <p className="font-semibold text-emerald-700 text-sm">Trabajo completado</p>
-              <p className="text-xs text-emerald-600 mt-1">Gracias por confiar en Enermax.</p>
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-3">
+              <div className="text-center mb-4">
+                <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                <p className="font-semibold text-emerald-700 text-sm">Trabajo completado</p>
+                <p className="text-xs text-emerald-600 mt-1">Gracias por confiar en Enermax.</p>
+              </div>
+
+              {/* Review form */}
+              {!reviewDone ? (
+                <div className="bg-white rounded-xl p-4 space-y-3">
+                  <p className="text-sm font-medium text-gray-700 text-center">¿Cómo fue tu experiencia?</p>
+                  <div className="flex items-center justify-center gap-1">
+                    {[1,2,3,4,5].map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setReviewRating(s)}
+                        className="p-1"
+                      >
+                        <Star className={`w-8 h-8 transition-colors ${
+                          s <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-gray-200'
+                        }`} />
+                      </button>
+                    ))}
+                  </div>
+                  {reviewRating > 0 && (
+                    <>
+                      <textarea
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        placeholder="Contanos cómo fue (opcional)"
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        rows={2}
+                      />
+                      <button
+                        onClick={submitReview}
+                        disabled={reviewSubmitting}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+                      >
+                        {reviewSubmitting ? 'Enviando...' : 'Enviar opinión'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl p-4 text-center">
+                  <div className="flex items-center justify-center gap-0.5 mb-1">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} className={`w-5 h-5 ${
+                        s <= (existingReview?.calificacion || reviewRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'
+                      }`} />
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-500">Gracias por tu opinión</p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Chat - THE MAIN THING */}
+          {/* Chat */}
           <div className="mb-3">
             <Chat solicitudId={params.id} autorTipo="cliente" />
           </div>
 
-          {/* Video recorder - "Mostrá tu problema" */}
+          {/* Video recorder */}
           {!esCancelada && !esCompletada && (
             <div className="mb-3">
               <VideoRecorder solicitudId={params.id} />
@@ -207,7 +299,7 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
             </div>
           )}
 
-          {/* Footer info */}
+          {/* Footer */}
           <div className="text-center space-y-2 mt-4">
             <p className="text-xs text-gray-400">
               Ref: {solicitud.id.slice(0, 8)} · Se actualiza automáticamente

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { sanitizeString, isValidUUID } from '@/lib/sanitize'
 
 // GET - Fetch messages for a solicitud
 export async function GET(request: NextRequest) {
@@ -45,6 +46,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!isValidUUID(solicitudId)) {
+      return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    }
+
+    const cleanMensaje = sanitizeString(mensaje, 2000)
+    if (!cleanMensaje) {
+      return NextResponse.json({ error: 'Mensaje vacío' }, { status: 400 })
+    }
+
     const supabase = createServerClient()
 
     // Insert message
@@ -54,7 +64,7 @@ export async function POST(request: NextRequest) {
         solicitud_id: solicitudId,
         autor_tipo: autorTipo,
         autor_id: autorId || null,
-        mensaje,
+        mensaje: cleanMensaje,
         archivo_url: archivoUrl || null,
         leido: false,
       })

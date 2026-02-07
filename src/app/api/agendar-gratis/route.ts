@@ -42,13 +42,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create initial chat message
-    await supabase.from('chat_mensajes').insert({
-      solicitud_id: solicitud.id,
-      autor_tipo: 'sistema',
-      mensaje: 'Solicitud recibida. El profesional va a revisar tu pedido y se va a comunicar con vos por este chat.',
-      leido: false,
-    })
+    // Create initial chat messages
+    await supabase.from('chat_mensajes').insert([
+      {
+        solicitud_id: solicitud.id,
+        autor_tipo: 'sistema',
+        mensaje: 'Solicitud creada',
+        leido: false,
+      },
+      {
+        solicitud_id: solicitud.id,
+        autor_tipo: 'profesional',
+        mensaje: 'Hola! Soy Leonel, electricista matriculado. Recibí tu solicitud y la voy a revisar. Estoy disponible de lunes a sábado de 8 a 18hs. Si querés, grabá un video del problema así lo veo antes de ir. Te contacto lo antes posible!',
+        leido: false,
+      },
+    ])
 
     // Notify admin
     notificarNuevoCliente('pago_confirmado', {

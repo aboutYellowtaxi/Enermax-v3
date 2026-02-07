@@ -8,6 +8,7 @@ interface Mensaje {
   id: string
   autor_tipo: 'cliente' | 'profesional' | 'sistema'
   mensaje: string
+  archivo_url?: string | null
   created_at: string
 }
 
@@ -198,7 +199,16 @@ export default function Chat({ solicitudId, autorTipo, compact = false }: ChatPr
                     ? 'bg-blue-600 text-white rounded-br-md'
                     : 'bg-gray-100 text-gray-900 rounded-bl-md'
                 }`}>
-                  <p>{m.mensaje}</p>
+                  {m.archivo_url && (
+                    <video
+                      src={m.archivo_url}
+                      controls
+                      playsInline
+                      className="rounded-xl mb-1.5 max-w-full"
+                      style={{ maxHeight: 200 }}
+                    />
+                  )}
+                  {m.mensaje && <p>{m.mensaje}</p>}
                   <p className={`text-[10px] mt-0.5 ${m.autor_tipo === autorTipo ? 'text-blue-200' : 'text-gray-400'}`}>
                     {formatTime(m.created_at)}
                   </p>

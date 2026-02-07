@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Zap, Phone, MapPin, MessageSquare, Clock, CheckCircle, RefreshCw, AlertCircle, Truck, Wrench, X, Undo2 } from 'lucide-react'
+import { Zap, Phone, MapPin, MessageSquare, Clock, CheckCircle, RefreshCw, AlertCircle, Truck, Wrench, X, Undo2, ChevronDown, Video } from 'lucide-react'
+import Chat from '@/components/Chat'
+import VideoCall from '@/components/VideoCall'
 
 interface Solicitud {
   id: string
@@ -25,6 +27,7 @@ export default function PanelPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [updating, setUpdating] = useState<string | null>(null)
+  const [expandedChat, setExpandedChat] = useState<string | null>(null)
 
   const fetchSolicitudes = async () => {
     setError('')
@@ -44,7 +47,7 @@ export default function PanelPage() {
 
   useEffect(() => {
     fetchSolicitudes()
-    const interval = setInterval(fetchSolicitudes, 30000)
+    const interval = setInterval(fetchSolicitudes, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -241,6 +244,27 @@ export default function PanelPage() {
                         <nextAction.icon className="w-4 h-4" />
                         {isUpdating ? 'Actualizando...' : `Marcar: ${nextAction.label}`}
                       </button>
+                    )}
+
+                    {/* Chat + Video toggle */}
+                    {!['completada', 'cancelada'].includes(s.estado) && (
+                      <button
+                        onClick={() => setExpandedChat(expandedChat === s.id ? null : s.id)}
+                        className="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100
+                                   text-blue-700 font-medium text-sm py-2.5 rounded-lg transition-colors"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Chat con cliente
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedChat === s.id ? 'rotate-180' : ''}`} />
+                      </button>
+                    )}
+
+                    {/* Expanded chat + video */}
+                    {expandedChat === s.id && (
+                      <div className="space-y-2">
+                        <VideoCall solicitudId={s.id} role="profesional" />
+                        <Chat solicitudId={s.id} autorTipo="profesional" />
+                      </div>
                     )}
 
                     {/* Undo + Cancel row */}

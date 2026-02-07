@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle, Clock, Phone, MessageSquare, ArrowLeft, Zap, User, MapPin, Truck, Wrench } from 'lucide-react'
+import { CheckCircle, Clock, Phone, MessageSquare, ArrowLeft, Zap, MapPin, Truck, Wrench } from 'lucide-react'
 import Link from 'next/link'
+import Chat from '@/components/Chat'
+import VideoCall from '@/components/VideoCall'
 
 const PROFESIONAL_TELEFONO = '1131449673'
 const PROFESIONAL_NOMBRE = 'Leonel'
@@ -69,7 +71,7 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
 
   useEffect(() => {
     fetchStatus()
-    const interval = setInterval(fetchStatus, 15000)
+    const interval = setInterval(fetchStatus, 10000)
     return () => clearInterval(interval)
   }, [params.id])
 
@@ -117,7 +119,7 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
         <div className="max-w-lg mx-auto">
 
           {/* Status hero */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             {esCancelada ? (
               <>
                 <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -153,46 +155,42 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
 
           {/* Timeline */}
           {!esCancelada && (
-            <div className="mb-8">
+            <div className="mb-6">
               <div className="relative pl-8">
                 {PASOS.map((paso, i) => {
                   const done = i <= currentStep
-                  const active = i === currentStep && !esCompletada
-                  const PasoIcon = paso.icon
+                  const isActive = i === currentStep && !esCompletada
 
                   return (
                     <div key={paso.estado} className="relative pb-6 last:pb-0">
-                      {/* Line */}
                       {i < PASOS.length - 1 && (
-                        <div
-                          className={`absolute left-[-20px] top-8 w-0.5 h-full ${
-                            i < currentStep ? 'bg-blue-500' : 'bg-gray-200'
-                          }`}
-                        />
+                        <div className={`absolute left-[-20px] top-8 w-0.5 h-full ${i < currentStep ? 'bg-blue-500' : 'bg-gray-200'}`} />
                       )}
-                      {/* Dot */}
-                      <div
-                        className={`absolute left-[-28px] top-1 w-5 h-5 rounded-full flex items-center justify-center ${
-                          done
-                            ? 'bg-blue-600'
-                            : 'bg-gray-200'
-                        } ${active ? 'ring-4 ring-blue-100' : ''}`}
-                      >
+                      <div className={`absolute left-[-28px] top-1 w-5 h-5 rounded-full flex items-center justify-center ${done ? 'bg-blue-600' : 'bg-gray-200'} ${isActive ? 'ring-4 ring-blue-100' : ''}`}>
                         {done && <CheckCircle className="w-3 h-3 text-white" />}
                       </div>
-                      {/* Content */}
                       <div>
-                        <p className={`text-sm font-semibold ${done ? 'text-gray-900' : 'text-gray-400'}`}>
-                          {paso.label}
-                        </p>
-                        {(done || active) && (
-                          <p className="text-xs text-gray-500 mt-0.5">{paso.descripcion}</p>
-                        )}
+                        <p className={`text-sm font-semibold ${done ? 'text-gray-900' : 'text-gray-400'}`}>{paso.label}</p>
+                        {(done || isActive) && <p className="text-xs text-gray-500 mt-0.5">{paso.descripcion}</p>}
                       </div>
                     </div>
                   )
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Video call */}
+          {!esCancelada && !esCompletada && (
+            <div className="mb-4">
+              <VideoCall solicitudId={params.id} role="cliente" />
+            </div>
+          )}
+
+          {/* Chat */}
+          {!esCancelada && (
+            <div className="mb-4">
+              <Chat solicitudId={params.id} autorTipo="cliente" />
             </div>
           )}
 
@@ -227,7 +225,7 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
             </div>
           </div>
 
-          {/* Info */}
+          {/* Address */}
           {solicitud.direccion && solicitud.direccion !== 'Sin especificar' && (
             <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 px-1">
               <MapPin className="w-3.5 h-3.5" />
@@ -240,10 +238,7 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
           </p>
 
           <div className="text-center">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
-            >
+            <Link href="/" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors">
               <ArrowLeft className="w-4 h-4" />
               Volver al inicio
             </Link>

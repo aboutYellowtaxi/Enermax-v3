@@ -103,6 +103,14 @@ export async function POST(request: NextRequest) {
       estado: 'pendiente',
     })
 
+    // Create initial chat message
+    await supabase.from('chat_mensajes').insert({
+      solicitud_id: solicitud.id,
+      autor_tipo: 'sistema',
+      mensaje: 'Solicitud creada. Completá el pago para confirmar. El profesional te va a contactar por este chat.',
+      leido: false,
+    })
+
     // Notify admin (non-blocking)
     notificarNuevoCliente('nuevo_lead', {
       telefono,

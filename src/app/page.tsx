@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield, Clock, CheckCircle, ArrowRight, Loader2, MapPin, Lock, Zap, Phone } from 'lucide-react'
+import { Shield, Clock, CheckCircle, ArrowRight, Loader2, MapPin, Lock, Zap } from 'lucide-react'
 
 const PRECIO_DIAGNOSTICO = 10000
 
@@ -116,13 +116,10 @@ export default function LandingPage() {
             </div>
             <span className="font-bold text-lg text-gray-900">Enermax</span>
           </div>
-          <a
-            href="tel:+5491131449673"
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors"
-          >
-            <Phone className="w-4 h-4" />
-            <span className="hidden sm:inline">Contacto</span>
-          </a>
+          <div className="flex items-center gap-1 text-xs text-gray-400">
+            <Lock className="w-3.5 h-3.5" />
+            <span>Pago seguro</span>
+          </div>
         </div>
       </header>
 

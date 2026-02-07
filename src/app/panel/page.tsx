@@ -155,29 +155,30 @@ export default function PanelPage() {
                     </p>
                   </div>
 
-                  {/* Actions */}
-                  {s.estado === 'pendiente' && (
-                    <div className="flex gap-2 px-4 pb-3">
-                      <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 text-white
-                                   text-sm font-semibold py-2.5 rounded-lg hover:bg-emerald-700 transition-colors"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        WhatsApp
-                      </a>
-                      <a
-                        href={`tel:+549${tel}`}
-                        className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-800
-                                   text-sm font-semibold py-2.5 rounded-lg hover:bg-gray-200 transition-colors"
-                      >
-                        <Phone className="w-4 h-4" />
-                        Llamar
-                      </a>
-                    </div>
-                  )}
+                  {/* Actions - always show */}
+                  <div className="flex gap-2 px-4 pb-3">
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-lg transition-colors ${
+                        s.estado === 'pendiente'
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      }`}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      WhatsApp
+                    </a>
+                    <a
+                      href={`tel:+549${tel}`}
+                      className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-800
+                                 text-sm font-semibold py-2.5 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      <Phone className="w-4 h-4" />
+                      Llamar
+                    </a>
+                  </div>
                 </div>
               )
             })}

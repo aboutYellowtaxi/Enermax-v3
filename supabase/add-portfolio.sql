@@ -16,8 +16,11 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('trabajos', 'trabajos', true)
 ON CONFLICT (id) DO NOTHING;
 
-CREATE POLICY IF NOT EXISTS "Public read trabajos" ON storage.objects
-  FOR SELECT USING (bucket_id = 'trabajos');
-
-CREATE POLICY IF NOT EXISTS "Service role upload trabajos" ON storage.objects
-  FOR INSERT WITH CHECK (bucket_id = 'trabajos');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public read trabajos') THEN
+    CREATE POLICY "Public read trabajos" ON storage.objects FOR SELECT USING (bucket_id = 'trabajos');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role upload trabajos') THEN
+    CREATE POLICY "Service role upload trabajos" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'trabajos');
+  END IF;
+END $$;

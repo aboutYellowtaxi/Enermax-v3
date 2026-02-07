@@ -219,9 +219,9 @@ export default function PanelPage() {
   const canceladas = visible.filter(s => s.estado === 'cancelada')
 
   const tabList = [
-    { key: 'activas' as Tab, label: 'Activas', count: activas.length, color: 'text-blue-600' },
-    { key: 'completadas' as Tab, label: 'Completadas', count: completadas.length, color: 'text-emerald-600' },
-    { key: 'canceladas' as Tab, label: 'Canceladas', count: canceladas.length, color: 'text-red-600' },
+    { key: 'activas' as Tab, label: 'Activas', count: activas.length, numColor: 'text-blue-600', ringColor: 'ring-blue-500' },
+    { key: 'completadas' as Tab, label: 'Completadas', count: completadas.length, numColor: 'text-emerald-600', ringColor: 'ring-emerald-500' },
+    { key: 'canceladas' as Tab, label: 'Canceladas', count: canceladas.length, numColor: 'text-red-600', ringColor: 'ring-red-500' },
   ]
 
   const currentList = tab === 'activas' ? activas : tab === 'completadas' ? completadas : canceladas
@@ -248,22 +248,20 @@ export default function PanelPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-4">
-        {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
+        {/* Stats as filter buttons */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
           {tabList.map(t => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 text-sm font-medium py-2.5 rounded-lg transition-all ${
+              className={`bg-white rounded-xl p-3 text-center border transition-all ${
                 tab === t.key
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? `ring-2 ${t.ringColor} border-transparent`
+                  : 'border-gray-100 hover:border-gray-200'
               }`}
             >
-              {t.label}
-              <span className={`ml-1.5 text-xs ${tab === t.key ? t.color : 'text-gray-400'}`}>
-                {t.count}
-              </span>
+              <p className={`text-2xl font-bold ${t.numColor}`}>{t.count}</p>
+              <p className="text-xs text-gray-500">{t.label}</p>
             </button>
           ))}
         </div>

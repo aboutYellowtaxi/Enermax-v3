@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     if (dbError || !solicitud) {
       console.error('DB Error:', dbError)
       return NextResponse.json(
-        { error: 'Error al crear la solicitud. Intentá de nuevo.' },
+        { error: `Error DB: ${dbError?.message || 'sin datos'} (code: ${dbError?.code || 'N/A'})` },
         { status: 500 }
       )
     }

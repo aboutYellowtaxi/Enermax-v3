@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Shield, Clock, CheckCircle, ArrowRight, Loader2, MapPin, Lock, Zap, Phone } from 'lucide-react'
 
 const PRECIO_DIAGNOSTICO = 10000
@@ -18,6 +18,15 @@ export default function LandingPage() {
   const [showForm, setShowForm] = useState(false)
   const [locationLoading, setLocationLoading] = useState(false)
   const [locationGranted, setLocationGranted] = useState(false)
+
+  // Fix: reset loading state when user navigates back from MercadoPago
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setLoading(false)
+    }
+    window.addEventListener('pageshow', handlePageShow)
+    return () => window.removeEventListener('pageshow', handlePageShow)
+  }, [])
 
   const requestLocation = () => {
     if (!navigator.geolocation) return

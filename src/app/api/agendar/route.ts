@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Preference } from 'mercadopago'
 import { createServerClient } from '@/lib/supabase'
+import { notificarNuevoCliente } from '@/lib/email'
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
@@ -101,6 +102,15 @@ export async function POST(request: NextRequest) {
       comision_mp: 0,
       estado: 'pendiente',
     })
+
+    // Notify admin (non-blocking)
+    notificarNuevoCliente('nuevo_lead', {
+      telefono,
+      direccion,
+      descripcion,
+      solicitudId: solicitud.id,
+      monto: PRECIO_DIAGNOSTICO,
+    }).catch(() => {})
 
     return NextResponse.json({
       success: true,

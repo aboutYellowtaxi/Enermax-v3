@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
 import { createServerClient } from '@/lib/supabase'
+import { notificarNuevoCliente } from '@/lib/email'
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
@@ -79,6 +80,15 @@ export async function POST(request: NextRequest) {
         mensaje: '¡Pago confirmado! El profesional fue notificado y te contactará pronto.',
         leido: false,
       })
+
+      // Send email with WhatsApp link to contact client
+      notificarNuevoCliente('pago_confirmado', {
+        telefono: solicitud.cliente_telefono,
+        direccion: solicitud.direccion,
+        descripcion: solicitud.notas,
+        solicitudId,
+        monto: solicitud.monto_total,
+      }).catch(() => {})
 
     } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
       // Update pago status

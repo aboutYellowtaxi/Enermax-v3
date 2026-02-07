@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
           phone: { number: telefono },
         },
         back_urls: {
-          success: `${appUrl}/pago/exito?solicitud=${solicitud.id}`,
+          success: `${appUrl}/seguimiento/${solicitud.id}?pago=ok`,
           failure: `${appUrl}/pago/error?solicitud=${solicitud.id}`,
           pending: `${appUrl}/pago/pendiente?solicitud=${solicitud.id}`,
         },

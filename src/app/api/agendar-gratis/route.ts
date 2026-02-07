@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       solicitud_id: solicitud.id,
+      redirect: `/seguimiento/${solicitud.id}`,
     })
   } catch (error: any) {
     console.error('Error in /api/agendar-gratis:', error)

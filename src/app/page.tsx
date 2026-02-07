@@ -94,7 +94,7 @@ export default function LandingPage() {
       })
       const data = await res.json()
       if (data.success) {
-        window.location.href = `/pago/exito?solicitud=${data.solicitud_id}&tipo=gratis`
+        window.location.href = data.redirect || `/seguimiento/${data.solicitud_id}`
       } else {
         setError(data.error || 'Error al procesar.')
         setLoading(null)
@@ -135,7 +135,7 @@ export default function LandingPage() {
               Electricista profesional en tu casa
             </h1>
             <p className="text-center text-gray-500 text-sm mb-4">
-              Agendá y te contactamos en minutos
+              Agendá y te contactamos lo antes posible
             </p>
 
             {/* Professional info - inline, no photo */}
@@ -316,7 +316,7 @@ export default function LandingPage() {
             </div>
             <div>
               <h3 className="font-medium text-gray-800 text-sm">¿Cuánto tiempo tardan en contactarme?</h3>
-              <p className="text-xs text-gray-500">Menos de 30 minutos.</p>
+              <p className="text-xs text-gray-500">Lo antes posible. Podés seguir el estado de tu solicitud en tiempo real desde la página de seguimiento.</p>
             </div>
             <div>
               <h3 className="font-medium text-gray-800 text-sm">¿Qué pasa si pago y no me contactan?</h3>

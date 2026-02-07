@@ -30,8 +30,8 @@ function ExitoContent() {
         </h1>
 
         <p className="text-gray-500 mb-6">
-          <strong className="text-gray-800">{PROFESIONAL_NOMBRE}</strong> te va a contactar
-          en menos de <strong className="text-blue-600">30 minutos</strong>.
+          <strong className="text-gray-800">{PROFESIONAL_NOMBRE}</strong> va a revisar tu solicitud
+          y se va a comunicar con vos <strong className="text-blue-600">lo antes posible</strong>.
         </p>
 
         <div className="space-y-3 mb-6">

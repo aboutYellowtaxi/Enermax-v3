@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield, Clock, CheckCircle, Loader2, Zap, Star, Calendar } from 'lucide-react'
+import { Shield, Clock, CheckCircle, Loader2, Zap, Star, Calendar, Search } from 'lucide-react'
 
 export default function LandingPage() {
   const [form, setForm] = useState({
@@ -236,10 +236,14 @@ export default function LandingPage() {
               </div>
             </form>
 
-            <p className="text-center text-xs text-gray-400 mt-4">
-              ¿Ya agendaste?{' '}
-              <a href="/mi-solicitud" className="text-blue-600 hover:underline">Consultá tu solicitud</a>
-            </p>
+            <a
+              href="/mi-solicitud"
+              className="block w-full text-center mt-4 py-3 rounded-xl border-2 border-gray-200 hover:border-blue-500
+                         text-gray-700 hover:text-blue-600 font-semibold text-sm transition-all"
+            >
+              <Search className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
+              ¿Ya agendaste? Consultá tu solicitud
+            </a>
           </div>
         </section>
 

@@ -299,14 +299,25 @@ export default function SeguimientoPage({ params }: { params: { id: string } }) 
             </div>
           )}
 
-          {/* Footer */}
-          <div className="text-center space-y-2 mt-4">
-            <p className="text-xs text-gray-400">
+          {/* Footer actions */}
+          <div className="space-y-2 mt-4">
+            <Link
+              href="/"
+              className="block w-full text-center py-3 rounded-xl border-2 border-gray-200 hover:border-blue-500
+                         text-gray-700 hover:text-blue-600 font-semibold text-sm transition-all"
+            >
+              Agendar nueva visita
+            </Link>
+            <Link
+              href="/mi-solicitud"
+              className="block w-full text-center py-3 rounded-xl border-2 border-gray-200 hover:border-blue-500
+                         text-gray-700 hover:text-blue-600 font-semibold text-sm transition-all"
+            >
+              Ver mis solicitudes
+            </Link>
+            <p className="text-xs text-gray-400 text-center pt-1">
               Ref: {solicitud.id.slice(0, 8)} · Se actualiza automáticamente
             </p>
-            <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-              Volver al inicio
-            </Link>
           </div>
         </div>
       </main>

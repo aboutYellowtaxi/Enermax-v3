@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Use exact match on cleaned phone (no wildcards)
     const { data, error } = await supabase
       .from('solicitudes')
-      .select('id, estado, created_at')
+      .select('id, estado, direccion, notas, created_at')
       .or(`cliente_telefono.eq.${cleanPhone},cliente_telefono.eq.${telefono.trim()}`)
       .order('created_at', { ascending: false })
       .limit(5)
@@ -36,14 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Error al buscar' }, { status: 500 })
     }
 
-    if (!data || data.length === 0) {
-      return NextResponse.json(
-        { error: 'No encontramos solicitudes con ese teléfono' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json({ solicitudes: data })
+    return NextResponse.json({ solicitudes: data || [] })
   } catch {
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })
   }

@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Zap, Search, ArrowRight, Clock, CheckCircle, Phone, Truck, Wrench, AlertCircle } from 'lucide-react'
+import { Zap, Search, ArrowRight, Clock, CheckCircle, Phone, Truck, Wrench, AlertCircle, Home } from 'lucide-react'
 import Link from 'next/link'
 
 interface SolicitudResumen {
   id: string
   estado: string
+  direccion?: string
+  notas?: string
   created_at: string
 }
 
@@ -45,8 +47,10 @@ export default function MiSolicitudPage() {
       })
       const data = await res.json()
       setSearched(true)
-      if (data.solicitudes) {
+      if (data.solicitudes && data.solicitudes.length > 0) {
         setSolicitudes(data.solicitudes)
+      } else if (data.solicitudes && data.solicitudes.length === 0) {
+        setError('No encontramos solicitudes con ese número')
       } else {
         setError(data.error || 'No encontramos solicitudes')
       }
@@ -63,21 +67,39 @@ export default function MiSolicitudPage() {
     })
   }
 
+  const tiempoRelativo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const mins = Math.floor(diff / 60000)
+    const hrs = Math.floor(diff / 3600000)
+    const days = Math.floor(diff / 86400000)
+    if (mins < 1) return 'Ahora mismo'
+    if (mins < 60) return `Hace ${mins} min`
+    if (hrs < 24) return `Hace ${hrs}h`
+    if (days < 7) return `Hace ${days} días`
+    return formatDate(dateStr)
+  }
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-lg mx-auto px-4 h-12 flex items-center gap-2">
-          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
+        <div className="max-w-lg mx-auto px-4 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Zap className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-gray-900">Enermax</span>
           </div>
-          <span className="font-bold text-gray-900">Enermax</span>
+          <Link href="/" className="text-sm text-gray-500 hover:text-blue-600 transition-colors flex items-center gap-1">
+            <Home className="w-3.5 h-3.5" />
+            Inicio
+          </Link>
         </div>
       </header>
 
       <main className="flex-1 pt-16 pb-8 px-4">
         <div className="max-w-sm mx-auto">
           <h1 className="text-xl font-bold text-gray-900 text-center mb-1">
-            Consultá tu solicitud
+            Mis solicitudes
           </h1>
           <p className="text-sm text-gray-500 text-center mb-6">
             Ingresá el teléfono con el que agendaste
@@ -86,9 +108,14 @@ export default function MiSolicitudPage() {
           <form onSubmit={buscar} className="space-y-3 mb-6">
             <input
               type="tel"
-              placeholder="Tu teléfono (ej: 11 1234-5678)"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Tu teléfono (ej: 1112345678)"
               value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
+              onChange={(e) => {
+                const nums = e.target.value.replace(/\D/g, '')
+                setTelefono(nums)
+              }}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5
                          text-gray-900 placeholder:text-gray-400 text-base
                          focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500
@@ -103,7 +130,7 @@ export default function MiSolicitudPage() {
                          disabled:opacity-50"
             >
               <Search className="w-4 h-4" />
-              {loading ? 'Buscando...' : 'Buscar'}
+              {loading ? 'Buscando...' : 'Buscar mis solicitudes'}
             </button>
           </form>
 
@@ -115,8 +142,8 @@ export default function MiSolicitudPage() {
 
           {solicitudes.length > 0 && (
             <div className="space-y-3">
-              <p className="text-xs text-gray-400 text-center">
-                {solicitudes.length === 1 ? 'Tu solicitud:' : `${solicitudes.length} solicitudes encontradas:`}
+              <p className="text-sm font-medium text-gray-700 text-center mb-2">
+                {solicitudes.length === 1 ? 'Tu solicitud' : `${solicitudes.length} solicitudes`}
               </p>
               {solicitudes.map((s) => {
                 const config = estadoConfig[s.estado] || estadoConfig.pendiente
@@ -125,16 +152,26 @@ export default function MiSolicitudPage() {
                   <Link
                     key={s.id}
                     href={`/seguimiento/${s.id}`}
-                    className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 rounded-xl p-4 transition-colors border border-gray-100"
+                    className="block bg-white hover:bg-gray-50 rounded-xl p-4 transition-colors border-2 border-gray-100 hover:border-blue-500"
                   >
-                    <div>
+                    <div className="flex items-center justify-between mb-2">
                       <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${config.color}`}>
                         <StatusIcon className="w-3 h-3" />
                         {config.label}
                       </span>
-                      <p className="text-xs text-gray-400 mt-1.5">{formatDate(s.created_at)}</p>
+                      <span className="text-xs text-gray-400">{tiempoRelativo(s.created_at)}</span>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400" />
+                    {s.direccion && s.direccion !== 'Sin especificar' && (
+                      <p className="text-sm text-gray-600 mb-1">{s.direccion}</p>
+                    )}
+                    {s.notas && !['Consulta / Agendamiento', 'Consulta / Agendamiento sin pago'].includes(s.notas) && (
+                      <p className="text-xs text-gray-400 line-clamp-1">{s.notas}</p>
+                    )}
+                    <div className="flex items-center justify-end mt-2">
+                      <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                        Ver seguimiento <ArrowRight className="w-3 h-3" />
+                      </span>
+                    </div>
                   </Link>
                 )
               })}
@@ -145,9 +182,14 @@ export default function MiSolicitudPage() {
             <p className="text-sm text-gray-400 text-center">No encontramos solicitudes</p>
           )}
 
-          <div className="text-center mt-8">
-            <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
-              Volver al inicio
+          {/* Bottom action */}
+          <div className="mt-8">
+            <Link
+              href="/"
+              className="block w-full text-center py-3.5 rounded-xl border-2 border-gray-200 hover:border-blue-500
+                         text-gray-700 hover:text-blue-600 font-semibold text-sm transition-all"
+            >
+              Agendar nueva visita
             </Link>
           </div>
         </div>

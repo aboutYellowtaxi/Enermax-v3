@@ -333,7 +333,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900">Mantenimiento Industrial</p>
-                    <p className="text-xs text-gray-500">Soldadura SMAW/MIG · Pintura industrial</p>
+                    <p className="text-xs text-gray-500">Mantenimiento preventivo y correctivo</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -342,14 +342,14 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900">Construcción</p>
-                    <p className="text-xs text-gray-500">Albañilería · Obra civil · 2+ años en DARQ</p>
+                    <p className="text-xs text-gray-500">Obra civil · 2+ años de experiencia</p>
                   </div>
                 </div>
               </div>
 
               {/* Skills tags */}
               <div className="flex flex-wrap gap-1.5 mt-4">
-                {['Instalaciones eléctricas', 'Tableros', 'Lectura de planos', 'Normas de seguridad', 'Soldadura', 'Cableado estructurado'].map(skill => (
+                {['Instalaciones eléctricas', 'Tableros', 'Lectura de planos', 'Normas de seguridad', 'Cableado estructurado', 'Detección de fallas'].map(skill => (
                   <span key={skill} className="text-[11px] bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
                     {skill}
                   </span>

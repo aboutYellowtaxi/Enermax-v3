@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase'
 import { notificarNuevoCliente } from '@/lib/email'
 import { rateLimit } from '@/lib/rate-limit'
 import { sanitizeString } from '@/lib/sanitize'
-import { sendTelegramMessage, isTelegramConfigured } from '@/lib/telegram'
+import { sendTelegramMessage, createForumTopic, isTelegramConfigured } from '@/lib/telegram'
 
 export async function POST(request: NextRequest) {
   // Rate limit by IP
@@ -83,15 +83,27 @@ export async function POST(request: NextRequest) {
       solicitudId: solicitud.id,
     }).catch(() => {})
 
-    // Notify via Telegram
+    // Notify via Telegram (create a topic per solicitud)
     if (isTelegramConfigured()) {
-      const shortId = solicitud.id.slice(0, 8)
+      const dir = direccion || 'Sin especificar'
+      const topicName = `📱 ${telefono} · ${dir}`.slice(0, 128)
+      const topicId = await createForumTopic(topicName)
+
+      // Save topic_id to solicitud for routing future messages
+      if (topicId) {
+        await supabase
+          .from('solicitudes')
+          .update({ telegram_topic_id: topicId })
+          .eq('id', solicitud.id)
+      }
+
       sendTelegramMessage(
-        `🆕 <b>Nueva solicitud</b> — <code>${shortId}</code>\n\n` +
+        `🆕 <b>Nueva solicitud</b>\n\n` +
         `📱 <b>Tel:</b> ${telefono}\n` +
-        `📍 <b>Dir:</b> ${direccion || 'Sin especificar'}\n` +
+        `📍 <b>Dir:</b> ${dir}\n` +
         (descripcion ? `📝 ${descripcion}\n` : '') +
-        `\nResponder: <code>/r ${shortId} tu mensaje</code>`
+        `\nRespondé acá directamente para hablar con el cliente.`,
+        { topicId: topicId || undefined }
       ).catch(() => {})
     }
 

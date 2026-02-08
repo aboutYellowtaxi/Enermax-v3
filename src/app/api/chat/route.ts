@@ -87,10 +87,10 @@ export async function POST(request: NextRequest) {
       supabase.removeChannel(channel)
     } catch { /* best effort */ }
 
-    // Create notification for the other party
+    // Fetch solicitud info for notifications + Telegram routing
     const { data: solicitud } = await supabase
       .from('solicitudes')
-      .select('profesional_id, cliente_auth_id, cliente_telefono, direccion')
+      .select('profesional_id, cliente_auth_id, cliente_telefono, direccion, telegram_topic_id')
       .eq('id', solicitudId)
       .single()
 
@@ -110,21 +110,17 @@ export async function POST(request: NextRequest) {
       } catch { /* best effort */ }
     }
 
-    // Forward client messages to Telegram
+    // Forward client messages to Telegram (to the solicitud's topic)
     if (autorTipo === 'cliente' && isTelegramConfigured()) {
       try {
-        const shortId = solicitudId.slice(0, 8)
-        const dir = solicitud?.direccion && solicitud.direccion !== 'Sin especificar'
-          ? ` · ${solicitud.direccion}` : ''
-        const header = `💬 <b>Nuevo mensaje</b> — <code>${shortId}</code>${dir}`
+        const topicId = solicitud?.telegram_topic_id || undefined
 
         if (archivoUrl && /\.(jpg|jpeg|png|gif|webp|heic)(\?|$)/i.test(archivoUrl)) {
-          await sendTelegramPhoto(archivoUrl, `${header}\n\n${cleanMensaje || '📷 Foto'}`)
+          await sendTelegramPhoto(archivoUrl, cleanMensaje || '📷 Foto', topicId)
         } else {
-          let text = `${header}\n\n${cleanMensaje}`
+          let text = cleanMensaje
           if (archivoUrl) text += `\n\n📎 <a href="${archivoUrl}">Ver archivo</a>`
-          text += `\n\nResponder: <code>/r ${shortId} tu mensaje</code>`
-          await sendTelegramMessage(text)
+          await sendTelegramMessage(text, { topicId })
         }
       } catch { /* best effort */ }
     }

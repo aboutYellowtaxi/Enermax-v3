@@ -2,36 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { sendTelegramMessage } from '@/lib/telegram'
 
-// Extract short ID (8 hex chars) from a Telegram message text
-// Telegram strips HTML so <code>abc12345</code> becomes plain "abc12345"
-// Our notifications always include: — abc12345
-function extractShortId(text: string): string | null {
-  // Look for "— " followed by 8 hex chars (plain text, no HTML)
-  const match = text.match(/— ([a-f0-9]{8})/i)
-  return match ? match[1].toLowerCase() : null
-}
-
-// Send a reply to a solicitud's web chat + broadcast
-async function sendToSolicitud(shortId: string, replyText: string): Promise<boolean> {
+// Insert a message into web chat + broadcast via realtime
+async function sendToWebChat(solicitudId: string, replyText: string, topicId?: number): Promise<boolean> {
   const supabase = createServerClient()
 
-  // Find solicitud by short ID prefix (ilike doesn't work on UUID columns)
-  const { data: recentSolicitudes } = await supabase
-    .from('solicitudes')
-    .select('id')
-    .order('created_at', { ascending: false })
-    .limit(100)
-
-  const match = recentSolicitudes?.find(s => s.id.startsWith(shortId))
-
-  if (!match) {
-    await sendTelegramMessage(`No encontré solicitud con ID <code>${shortId}</code>`)
-    return false
-  }
-
-  const solicitudId = match.id
-
-  // Insert message as professional
   const { data: msgData, error } = await supabase
     .from('chat_mensajes')
     .insert({
@@ -44,29 +18,29 @@ async function sendToSolicitud(shortId: string, replyText: string): Promise<bool
     .single()
 
   if (error) {
-    await sendTelegramMessage('Error al enviar mensaje.')
+    await sendTelegramMessage('Error al enviar mensaje.', { topicId })
     return false
   }
 
   // Broadcast to web chat via Supabase realtime
-  const channel = supabase.channel(`chat-live:${solicitudId}`)
-  await channel.send({
-    type: 'broadcast',
-    event: 'new_message',
-    payload: { mensaje: msgData },
-  })
-  supabase.removeChannel(channel)
+  try {
+    const channel = supabase.channel(`chat-live:${solicitudId}`)
+    await channel.send({
+      type: 'broadcast',
+      event: 'new_message',
+      payload: { mensaje: msgData },
+    })
+    supabase.removeChannel(channel)
+  } catch { /* best effort */ }
 
-  await sendTelegramMessage(`✅ Enviado a <code>${shortId}</code>`)
   return true
 }
 
-// Telegram sends updates here when Leo messages the bot
+// Telegram sends updates here when Leo messages the bot/group
 export async function POST(request: NextRequest) {
   try {
     const update = await request.json()
 
-    // Only handle text messages
     const message = update.message
     if (!message || !message.text) {
       return NextResponse.json({ ok: true })
@@ -75,19 +49,20 @@ export async function POST(request: NextRequest) {
     const chatId = String(message.chat.id)
     const expectedChatId = process.env.TELEGRAM_CHAT_ID || ''
 
-    // Only accept messages from Leo's chat
+    // Only accept messages from our configured chat (group or private)
     if (chatId !== expectedChatId) {
       return NextResponse.json({ ok: true })
     }
 
     const text = message.text.trim()
+    const topicId: number | undefined = message.message_thread_id || undefined
 
-    // Handle /start command
-    if (text === '/start') {
+    // Handle /start command (only in general/private, not in topics)
+    if (text === '/start' && !topicId) {
       await sendTelegramMessage(
         '🔌 <b>Enermax Bot activo</b>\n\n' +
-        'Cuando un cliente te escriba, te llega acá.\n' +
-        'Para responder: <b>deslizá sobre el mensaje y escribí tu respuesta</b>.\n\n' +
+        'Cada cliente tiene su propio tema/hilo.\n' +
+        'Escribí directamente en el hilo del cliente para responderle.\n\n' +
         'Comandos:\n' +
         '/activas — Ver solicitudes activas\n' +
         '/start — Ver esta ayuda'
@@ -106,66 +81,59 @@ export async function POST(request: NextRequest) {
         .limit(10)
 
       if (!solicitudes || solicitudes.length === 0) {
-        await sendTelegramMessage('No hay solicitudes activas.')
+        await sendTelegramMessage('No hay solicitudes activas.', { topicId })
         return NextResponse.json({ ok: true })
       }
 
       let msg = '📋 <b>Solicitudes activas:</b>\n\n'
       solicitudes.forEach((s) => {
-        const shortId = s.id.slice(0, 8)
         const estado = s.estado === 'pendiente' ? '🔵 Nueva' :
                        s.estado === 'aceptada' ? '📞 Contactado' : '🔧 En curso'
-        msg += `${estado} — <code>${shortId}</code>\n`
+        msg += `${estado}\n`
         if (s.direccion && s.direccion !== 'Sin especificar') {
           msg += `📍 ${s.direccion}\n`
         }
         msg += `📱 ${s.cliente_telefono}\n\n`
       })
 
-      await sendTelegramMessage(msg)
+      await sendTelegramMessage(msg, { topicId })
       return NextResponse.json({ ok: true })
     }
 
-    // Handle /r ID message (manual fallback)
-    const replyMatch = text.match(/^\/r\s+([a-f0-9]{8})\s+(.+)$/is)
-    if (replyMatch) {
-      await sendToSolicitud(replyMatch[1].toLowerCase(), replyMatch[2].trim())
+    // MAIN FLOW: message inside a topic → route to that solicitud
+    if (topicId) {
+      const supabase = createServerClient()
+
+      // Find solicitud by telegram_topic_id
+      const { data: solicitud } = await supabase
+        .from('solicitudes')
+        .select('id')
+        .eq('telegram_topic_id', topicId)
+        .single()
+
+      if (solicitud) {
+        await sendToWebChat(solicitud.id, text, topicId)
+        return NextResponse.json({ ok: true })
+      }
+
+      // Topic not linked to any solicitud
+      await sendTelegramMessage(
+        'Este hilo no está vinculado a ninguna solicitud.',
+        { topicId }
+      )
       return NextResponse.json({ ok: true })
     }
 
-    // Handle REPLY to a notification message (main flow!)
-    // Leo swipes on a notification and types his reply
-    if (message.reply_to_message && message.reply_to_message.text) {
-      const originalText = message.reply_to_message.text
-      const shortId = extractShortId(originalText)
-
-      if (shortId) {
-        await sendToSolicitud(shortId, text)
-        return NextResponse.json({ ok: true })
-      }
-    }
-
-    // Also check if reply is to a photo caption
-    if (message.reply_to_message && message.reply_to_message.caption) {
-      const shortId = extractShortId(message.reply_to_message.caption)
-      if (shortId) {
-        await sendToSolicitud(shortId, text)
-        return NextResponse.json({ ok: true })
-      }
-    }
-
-    // Unknown command or plain text without reply context
+    // Message in general chat without topic context
     if (text.startsWith('/')) {
       await sendTelegramMessage(
         'Comandos:\n' +
         '/activas — Ver solicitudes activas\n' +
-        '/start — Ver ayuda\n\n' +
-        'Para responder a un cliente, deslizá sobre su mensaje y escribí tu respuesta.'
+        '/start — Ver ayuda'
       )
     } else {
-      // Plain text without replying to anything
       await sendTelegramMessage(
-        'Para responder a un cliente, deslizá sobre su mensaje y escribí tu respuesta.'
+        'Respondé dentro del hilo de cada cliente para hablar con ellos.'
       )
     }
 

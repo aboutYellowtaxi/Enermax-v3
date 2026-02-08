@@ -120,15 +120,10 @@ export default function Chat({ solicitudId, autorTipo, compact = false }: ChatPr
       const data = await res.json()
 
       if (data.mensaje) {
+        // Replace optimistic message with real one (server broadcasts to the other side)
         setMensajes(prev =>
           prev.map(m => m.id === tempMsg.id ? data.mensaje : m)
         )
-        // Broadcast to the other side
-        channelRef.current?.send({
-          type: 'broadcast',
-          event: 'new_message',
-          payload: { mensaje: data.mensaje },
-        })
       }
     } catch {
       setMensajes(prev => prev.filter(m => m.id !== tempMsg.id))

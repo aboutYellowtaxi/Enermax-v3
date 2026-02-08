@@ -76,6 +76,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Broadcast to all connected clients via Supabase realtime
+    try {
+      const channel = supabase.channel(`chat-live:${solicitudId}`)
+      await channel.send({
+        type: 'broadcast',
+        event: 'new_message',
+        payload: { mensaje: data },
+      })
+      supabase.removeChannel(channel)
+    } catch { /* best effort */ }
+
     // Create notification for the other party
     const { data: solicitud } = await supabase
       .from('solicitudes')

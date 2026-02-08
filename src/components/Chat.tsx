@@ -25,6 +25,9 @@ export default function Chat({ solicitudId, autorTipo, compact = false }: ChatPr
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(!compact)
   const [unread, setUnread] = useState(0)
+  const [otherTyping, setOtherTyping] = useState(false)
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastTypingSentRef = useRef(0)
   const scrollRef = useRef<HTMLDivElement>(null)
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
@@ -55,6 +58,17 @@ export default function Chat({ solicitudId, autorTipo, compact = false }: ChatPr
           if (!open && payload.mensaje.autor_tipo !== autorTipo) {
             setUnread(prev => prev + 1)
           }
+          // Stop typing indicator when message arrives
+          if (payload.mensaje.autor_tipo !== autorTipo) {
+            setOtherTyping(false)
+          }
+        }
+      })
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload && payload.autor !== autorTipo) {
+          setOtherTyping(true)
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+          typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), 3000)
         }
       })
       .subscribe()
@@ -229,13 +243,34 @@ export default function Chat({ solicitudId, autorTipo, compact = false }: ChatPr
         )}
       </div>
 
+      {/* Typing indicator */}
+      {otherTyping && (
+        <div className="px-4 py-1">
+          <span className="text-xs text-gray-400 italic">
+            {autorTipo === 'cliente' ? 'El profesional' : 'El cliente'} está escribiendo...
+          </span>
+        </div>
+      )}
+
       {/* Input */}
       <div className="px-3 py-2 border-t border-gray-100">
         <form onSubmit={(e) => { e.preventDefault(); enviar() }} className="flex items-center gap-2">
           <input
             type="text"
             value={texto}
-            onChange={(e) => setTexto(e.target.value)}
+            onChange={(e) => {
+              setTexto(e.target.value)
+              // Broadcast typing (max once per 2s)
+              const now = Date.now()
+              if (now - lastTypingSentRef.current > 2000 && channelRef.current) {
+                lastTypingSentRef.current = now
+                channelRef.current.send({
+                  type: 'broadcast',
+                  event: 'typing',
+                  payload: { autor: autorTipo },
+                })
+              }
+            }}
             placeholder="Escribí un mensaje..."
             className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5
                        text-sm text-gray-900 placeholder:text-gray-400

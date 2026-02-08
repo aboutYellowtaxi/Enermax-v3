@@ -3,11 +3,12 @@ import { createServerClient } from '@/lib/supabase'
 import { sendTelegramMessage } from '@/lib/telegram'
 
 // Extract short ID (8 hex chars) from a Telegram message text
-// Our notifications always include the ID in the format: — abc12345
+// Telegram strips HTML so <code>abc12345</code> becomes plain "abc12345"
+// Our notifications always include: — abc12345
 function extractShortId(text: string): string | null {
-  // Match 8-char hex ID that appears after "— " or in backticks/code
-  const match = text.match(/(?:— |`)([a-f0-9]{8})(?:`|[\s\n])/)
-  return match ? match[1] : null
+  // Look for "— " followed by 8 hex chars (plain text, no HTML)
+  const match = text.match(/— ([a-f0-9]{8})/i)
+  return match ? match[1].toLowerCase() : null
 }
 
 // Send a reply to a solicitud's web chat + broadcast

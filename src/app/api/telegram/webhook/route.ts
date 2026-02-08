@@ -15,19 +15,21 @@ function extractShortId(text: string): string | null {
 async function sendToSolicitud(shortId: string, replyText: string): Promise<boolean> {
   const supabase = createServerClient()
 
-  // Find solicitud by short ID prefix
-  const { data: solicitudes } = await supabase
+  // Find solicitud by short ID prefix (ilike doesn't work on UUID columns)
+  const { data: recentSolicitudes } = await supabase
     .from('solicitudes')
     .select('id')
-    .ilike('id', `${shortId}%`)
-    .limit(1)
+    .order('created_at', { ascending: false })
+    .limit(100)
 
-  if (!solicitudes || solicitudes.length === 0) {
+  const match = recentSolicitudes?.find(s => s.id.startsWith(shortId))
+
+  if (!match) {
     await sendTelegramMessage(`No encontré solicitud con ID <code>${shortId}</code>`)
     return false
   }
 
-  const solicitudId = solicitudes[0].id
+  const solicitudId = match.id
 
   // Insert message as professional
   const { data: msgData, error } = await supabase
